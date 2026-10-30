@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sơ Đồ Bốc Thăm & Kết Quả Thi Đấu - CLB Vĩ Hồ</title>
+  <!-- Tải Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Thư viện đọc/xuất Excel (SheetJS) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Thư viện xuất ảnh độ phân giải cao (html2canvas) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- Firebase SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <!-- Font chữ Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .bracket-scrollbar::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    .bracket-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .bracket-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .bracket-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    @media print {
+      body {
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
+      }
+      #leftSidebar, #actionToolbar, #toastContainer, #categoryTabsBar, #topGlobalBar {
+        display: none !important;
+      }
+      #rightArea, #bracketWrapper, #exportArea, #summaryWrapper {
+        height: auto !important;
+        overflow: visible !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: white !important;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col">
+
+  <!-- Thông báo nổi (Toast) -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ================= THANH TRẠNG THÁI & PHÂN QUYỀN (TOP BAR) ================= -->
+  <div id="topGlobalBar" class="bg-slate-950 text-white px-4 py-2 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0 z-40">
+    <div class="flex items-center gap-3">
+      <!-- Trạng thái kết nối Firebase -->
+      <div class="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800">
+        <span id="firebaseStatusDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="firebaseStatusText" class="text-slate-300">Đang kết nối...</span>
+      </div>
+
+      <!-- Hiển thị Quyền hiện tại -->
+      <div id="currentRoleBadge" class="px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
+        👁️ Chế độ Xem (VĐV & Phụ huynh)
+      </div>
+
+      <!-- Lọc nhanh theo sân cho VĐV / Phụ huynh -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-[11px] text-slate-400 font-bold hidden sm:inline">Lọc sân:</span>
+        <select id="publicCourtFilter" class="bg-slate-900 border border-slate-700 text-amber-400 text-xs font-bold rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500 cursor-pointer">
+          <option value="ALL">Tất cả các sân</option>
+          <option value="Sân 1">Sân 1</option>
+          <option value="Sân 2">Sân 2</option>
+          <option value="Sân 3">Sân 3</option>
+          <option value="Sân 4">Sân 4</option>
+          <option value="Sân 5">Sân 5</option>
+          <option value="Sân 6">Sân 6</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Cụm nút chức năng bên phải -->
+    <div class="flex items-center gap-2">
+      <!-- Nút Chuyển sang Bảng Tổng Hợp Toàn Đoàn -->
+      <button id="toggleSummaryViewBtn" class="py-1.5 px-3 rounded-lg bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow transition-all cursor-pointer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-4 h-4">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+          <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+          <path d="M4 22h16"></path>
+          <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+          <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+        </svg>
+        <span id="toggleSummaryViewText">Tổng Hợp Toàn Đoàn</span>
+      </button>
+
+      <!-- Nút Copy Link Chia sẻ cho VĐV & Phụ huynh -->
+      <button id="sharePublicLinkBtn" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer" title="Sao chép đường dẫn chỉ xem cho VĐV và Phụ huynh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5">
+          <circle cx="18" cy="5" r="3"></circle>
+          <circle cx="6" cy="12" r="3"></circle>
+          <circle cx="18" cy="19" r="3"></circle>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+        </svg>
+        <span class="hidden md:inline">Copy Link Xem</span>
+      </button>
+
+      <!-- Nút Quản lý Mã PIN (Chỉ hiện khi là Admin) -->
+      <button id="openPinSettingBtn" class="hidden py-1.5 px-3 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs items-center gap-1.5 transition-all cursor-pointer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+        <span>Cài Đặt PIN</span>
+      </button>
+
+      <!-- Nút Đăng nhập / Đăng xuất Phân quyền -->
+      <button id="openAuthModalBtn" class="py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+          <polyline points="10 17 15 12 10 7"></polyline>
+          <line x1="15" y1="12" x2="3" y2="12"></line>
+        </svg>
+        <span id="authBtnText">Đăng Nhập Thư Ký / Admin</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL ĐĂNG NHẬP PHÂN QUYỀN ================= -->
+  <div id="authModal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-white shadow-2xl">
+      <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-black uppercase tracking-wider text-amber-400">Phân Quyền Hệ Thống</h3>
+        <button id="closeAuthModalBtn" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">✕</button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1.5">1. Chọn Vai Trò Của Bạn</label>
+          <select id="loginRoleSelect" class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 font-bold text-sm focus:outline-none focus:border-blue-500 cursor-pointer">
+            <option value="viewer">👁️ VĐV & Phụ Huynh (Chỉ xem kết quả)</option>
+            <option value="Sân 1">📝 Thư ký Sân 1 (Chỉ quản lý Sân 1)</option>
+            <option value="Sân 2">📝 Thư ký Sân 2 (Chỉ quản lý Sân 2)</option>
+            <option value="Sân 3">📝 Thư ký Sân 3 (Chỉ quản lý Sân 3)</option>
+            <option value="Sân 4">📝 Thư ký Sân 4 (Chỉ quản lý Sân 4)</option>
+            <option value="Sân 5">📝 Thư ký Sân 5 (Chỉ quản lý Sân 5)</option>
+            <option value="Sân 6">📝 Thư ký Sân 6 (Chỉ quản lý Sân 6)</option>
+            <option value="admin">👑 Quản Trị Viên - Admin (Toàn quyền)</option>
+          </select>
+        </div>
+
+        <div id="pinInputWrapper" class="hidden">
+          <label class="block text-xs font-bold text-slate-300 uppercase mb-1.5">2. Nhập Mã PIN Cấp Quyền</label>
+          <input id="loginPinInput" type="password" placeholder="Nhập mã PIN..." class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 font-bold text-sm focus:outline-none focus:border-amber-500" />
+          <p class="text-[11px] text-slate-400 mt-1.5">
+            * Mặc định lần đầu: Admin (<strong class="text-amber-400">9999</strong>) | Sân 1→6 (<strong class="text-amber-400">1111 → 6666</strong>). Admin có thể đổi lại PIN bất kỳ lúc nào.
+          </p>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2">
+          <button id="confirmLoginBtn" class="w-full py-2.5 px-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-sm rounded-xl shadow-lg cursor-pointer">
+            XÁC NHẬN CHẾ ĐỘ
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL CÀI ĐẶT MÃ PIN (CHỈ ADMIN) ================= -->
+  <div id="pinSettingModal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-white shadow-2xl">
+      <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+        <h3 class="text-base font-black uppercase tracking-wider text-purple-400">Quản Lý Mã PIN Phân Quyền</h3>
+        <button id="closePinSettingBtn" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">✕</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-4">Cấp mã PIN riêng cho từng thư ký phụ trách sân. Khi lưu, mã PIN mới sẽ cập nhật ngay lên Firebase.</p>
+      <div id="pinSettingsForm" class="space-y-2.5 max-h-80 overflow-y-auto custom-scrollbar pr-1">
+        <!-- Render bằng JS -->
+      </div>
+      <div class="mt-5 flex justify-end gap-2">
+        <button id="savePinsBtn" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-xs uppercase rounded-xl shadow-lg cursor-pointer">
+          Lưu Toàn Bộ Mã PIN Lên Hệ Thống
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL NHẬP FILE EXCEL ================= -->
+  <div id="excelModal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-white shadow-2xl transform transition-all">
+      <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+          </div>
+          <h3 class="text-lg font-black uppercase tracking-wider text-white">Nhập Danh Sách Excel</h3>
+        </div>
+        <button id="closeExcelModalBtn" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer">✕</button>
+      </div>
+
+      <p class="text-xs text-slate-300 mb-5 leading-relaxed">
+        Tải file Excel mẫu về máy, điền danh sách <strong class="text-emerald-400">Tên VĐV</strong>, <strong class="text-emerald-400">Đơn vị</strong> (và <strong class="text-emerald-400">Số thăm</strong> nếu có sẵn), sau đó tải file lên để tự động điền.
+      </p>
+
+      <div class="space-y-4">
+        <div class="p-4 rounded-xl bg-slate-800/70 border border-slate-700/80 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-bold text-white">1. File Excel Mẫu chuẩn</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">Định dạng .xlsx có sẵn cột mẫu</div>
+          </div>
+          <button id="downloadTemplateBtn" class="py-2 px-3.5 bg-slate-700 hover:bg-slate-600 text-emerald-400 font-bold text-xs rounded-lg border border-slate-600 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0">
+            Tải File Mẫu
+          </button>
+        </div>
+
+        <div class="p-5 rounded-xl bg-slate-800/40 border-2 border-dashed border-slate-600 hover:border-emerald-500 transition-colors text-center">
+          <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" class="hidden" />
+          <div class="text-sm font-bold text-white mb-1">2. Tải File Danh Sách Lên</div>
+          <div class="text-[11px] text-slate-400 mb-3">Hỗ trợ định dạng .xlsx, .xls, .csv (Tự động nâng Schema nếu danh sách dài)</div>
+          <button id="triggerUploadExcelBtn" class="py-2.5 px-5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer">
+            CHỌN FILE TỪ MÁY TÍNH
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= KHUNG CHÍNH (SIDEBAR + NỘI DUNG) ================= -->
+  <div class="flex-1 flex flex-col xl:flex-row overflow-hidden">
+
+    <!-- TRÁI: BẢNG NHẬP LIỆU & BỐC THĂM (Ẩn khi ở chế độ VĐV/Phụ huynh) -->
+    <div id="leftSidebar" class="hidden w-full xl:w-[32rem] bg-slate-900 text-white flex-col shadow-2xl z-20 shrink-0 h-1/2 xl:h-full border-b xl:border-b-0 xl:border-r border-slate-800">
+      <div class="p-4 xl:p-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3 min-w-0">
+          <div id="logoContainer" title="Nhấp vào đây để thay đổi Logo" class="relative group cursor-pointer w-11 h-11 rounded-xl bg-slate-900 border border-slate-700 hover:border-orange-500 flex items-center justify-center overflow-hidden shrink-0 transition-all shadow-inner">
+            <img id="customLogoImg" src="" alt="Logo" class="hidden w-full h-full object-contain p-0.5" />
+            <svg id="defaultLogoSvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7 text-orange-500 shrink-0">
+              <path d="M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z"></path>
+              <path d="M9 12h.01"></path><path d="M15 12h.01"></path>
+              <path d="M12 17c-1.5 0-2.5-.5-2.5-1.5s1-1.5 2.5-1.5 2.5.5 2.5 1.5-1 1.5-2.5 1.5Z"></path>
+            </svg>
+            <div class="absolute inset-0 bg-black/65 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+              <span class="text-[9px] font-bold text-white uppercase tracking-tighter text-center leading-tight">Đổi<br>Logo</span>
+            </div>
+            <input type="file" id="logoInput" accept="image/*" class="hidden" />
+          </div>
+
+          <div class="truncate">
+            <h1 class="text-base xl:text-lg font-black tracking-wider uppercase text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500 truncate">
+              Bàn Thư Ký Chuẩn Bị
+            </h1>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="openExcelModalBtn" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg shadow transition-colors flex items-center gap-1.5 cursor-pointer">
+            Nhập File
+          </button>
+          <button id="fillSampleBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-2.5 rounded-lg border border-slate-700 transition-colors cursor-pointer">
+            Điền mẫu
+          </button>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-900 border-b border-slate-800 shrink-0 space-y-3">
+        <div class="grid grid-cols-12 gap-2.5">
+          <div class="col-span-7">
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Tên Trang / Hạng Cân</label>
+            <input 
+              id="sidebarCategoryNameInput" 
+              type="text" 
+              value="Hạng cân 1"
+              placeholder="VD: Nam 45kg, Nữ 49kg..."
+              class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 text-xs sm:text-sm font-bold focus:outline-none focus:border-orange-500 transition-colors"
+            />
+          </div>
+          <div class="col-span-5">
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Sân Thi Đấu</label>
+            <select id="sidebarCourtSelect" class="w-full bg-slate-800 border border-slate-700 text-amber-400 rounded-lg px-2.5 py-2 focus:outline-none focus:border-amber-500 font-bold text-xs sm:text-sm transition-all cursor-pointer">
+              <option value="Sân 1" selected>Sân 1</option>
+              <option value="Sân 2">Sân 2</option>
+              <option value="Sân 3">Sân 3</option>
+              <option value="Sân 4">Sân 4</option>
+              <option value="Sân 5">Sân 5</option>
+              <option value="Sân 6">Sân 6</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex gap-2.5">
+          <div class="flex-1">
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Số lượng nhánh (VĐV)</label>
+            <select id="sizeSelect" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2.5 focus:outline-none focus:border-blue-500 font-bold text-xs sm:text-sm transition-all cursor-pointer">
+              <option value="4">Schema 4 VĐV (Bán kết)</option>
+              <option value="8" selected>Schema 8 VĐV (Tứ kết)</option>
+              <option value="16">Schema 16 VĐV (Vòng 1/8)</option>
+              <option value="32">Schema 32 VĐV (Vòng 1/16)</option>
+              <option value="64">Schema 64 VĐV (Vòng 1/32)</option>
+              <option value="128">Schema 128 VĐV (Vòng 1/64)</option>
+            </select>
+          </div>
+          <div class="flex-1 flex items-end">
+            <button id="drawBtn" class="w-full py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.99] text-white font-bold text-xs sm:text-sm rounded-lg transition-all shadow-lg flex items-center justify-center gap-1.5 cursor-pointer">
+              <span>BỐC THĂM NGẪU NHIÊN</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider pt-1 px-1">
+          <div class="col-span-2 text-center">Số thăm</div>
+          <div class="col-span-6">Tên VĐV</div>
+          <div class="col-span-4">Đơn vị</div>
+        </div>
+      </div>
+
+      <div id="participantsList" class="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-2"></div>
+    </div>
+
+    <!-- PHẢI: SƠ ĐỒ THI ĐẤU HOẶC BẢNG TỔNG HỢP TOÀN ĐOÀN -->
+    <div id="rightArea" class="flex-1 h-full relative overflow-hidden flex flex-col bg-slate-50">
+      
+      <!-- MODAL XẾP LỊCH & ĐÁNH SỐ TRẬN THEO SÂN -->
+      <div id="scheduleModal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 text-white shadow-2xl">
+          <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+            <div>
+              <h3 class="text-base sm:text-lg font-black uppercase tracking-wider text-white">Đánh Số Trận Thi Đấu Theo Sân</h3>
+              <p class="text-[11px] text-slate-400">Đảm bảo các VĐV có thời gian nghỉ đồng đều nhau nhất</p>
+            </div>
+            <button id="closeScheduleModalBtn" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer">✕</button>
+          </div>
+
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1.5 uppercase">1. Chọn Sân Thi Đấu</label>
+                <select id="scheduleCourtSelect" class="w-full bg-slate-800 border border-slate-700 text-amber-400 rounded-lg px-3 py-2 font-bold text-sm focus:outline-none focus:border-amber-500 cursor-pointer">
+                  <option value="Sân 1">Sân 1</option>
+                  <option value="Sân 2">Sân 2</option>
+                  <option value="Sân 3">Sân 3</option>
+                  <option value="Sân 4">Sân 4</option>
+                  <option value="Sân 5">Sân 5</option>
+                  <option value="Sân 6">Sân 6</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-300 mb-1.5 uppercase">2. Số Trận Bắt Đầu</label>
+                <input id="scheduleStartNumInput" type="number" min="1" value="1" class="w-full bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 font-bold text-sm focus:outline-none focus:border-amber-500" />
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-bold text-slate-300 uppercase">3. Chọn các Hạng cân thi đấu trên sân này</label>
+                <button id="selectAllCourtCatsBtn" class="text-[11px] text-amber-400 hover:underline font-bold cursor-pointer">Chọn tất cả thuộc sân</button>
+              </div>
+              <div id="scheduleCategoriesList" class="max-h-52 overflow-y-auto custom-scrollbar bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 space-y-1.5"></div>
+            </div>
+
+            <div class="flex justify-end gap-2.5 pt-2">
+              <button id="clearScheduleBtn" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 transition-colors cursor-pointer">
+                Xóa Số Trận Sân Này
+              </button>
+              <button id="applyScheduleBtn" class="py-2.5 px-5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-lg transition-all cursor-pointer">
+                ĐÁNH SỐ TRẬN TỰ ĐỘNG
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- THANH QUẢN LÝ NHIỀU TRANG / HẠNG CÂN THI ĐẤU -->
+      <div id="categoryTabsBar" class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar shrink-0 z-30">
+        <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar">
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">Nội dung:</span>
+          <div id="tabsContainer" class="flex items-center gap-2"></div>
+          <button id="addCategoryBtn" class="hidden py-1.5 px-3 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs items-center gap-1 shrink-0 shadow transition-all cursor-pointer ml-1">
+            + Thêm Hạng Cân
+          </button>
+        </div>
+
+        <button id="openScheduleModalBtn" class="hidden py-1.5 px-3.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs items-center gap-1.5 shrink-0 shadow-md transition-all cursor-pointer">
+          Xếp Lịch & Đánh Số Trận
+        </button>
+      </div>
+
+      <!-- MÀN HÌNH 1: CHƯA BỐC THĂM -->
+      <div id="emptyState" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-20 h-20 rounded-full bg-slate-200/70 flex items-center justify-center mb-4 text-slate-400">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-10 h-10">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <path d="M3 9h18"></path>
+            <path d="M9 21V9"></path>
+          </svg>
+        </div>
+        <h2 class="text-xl font-black text-slate-400 uppercase tracking-widest">Hạng Cân Này Chưa Bốc Thăm</h2>
+        <p class="text-slate-500 mt-2 font-medium max-w-md text-sm">
+          Thư ký phụ trách sân hoặc Admin vui lòng đăng nhập để nhập danh sách VĐV và tiến hành bốc thăm.
+        </p>
+      </div>
+
+      <!-- MÀN HÌNH 2: SƠ ĐỒ THI ĐẤU -->
+      <div id="bracketWrapper" class="hidden flex-1 overflow-auto bracket-scrollbar p-6 md:p-8">
+        <div id="actionToolbar" class="mb-4 sticky left-0 z-30 flex flex-wrap items-center justify-between gap-2.5 bg-slate-100/90 backdrop-blur-sm p-2.5 rounded-xl border border-slate-200">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-500 uppercase">Hạng Cân:</span>
+              <input 
+                id="categoryNameInput" 
+                type="text" 
+                value="Hạng cân 1"
+                class="bg-white border border-slate-300 focus:border-blue-600 rounded-lg px-3 py-1 text-xs md:text-sm font-bold text-slate-800 focus:outline-none transition-colors w-44 md:w-56"
+              />
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-slate-500 uppercase">Sân:</span>
+              <select id="toolbarCourtSelect" class="bg-amber-50 border border-amber-300 focus:border-amber-600 rounded-lg px-2.5 py-1 text-xs md:text-sm font-black text-amber-800 focus:outline-none transition-colors cursor-pointer">
+                <option value="Sân 1">Sân 1</option>
+                <option value="Sân 2">Sân 2</option>
+                <option value="Sân 3">Sân 3</option>
+                <option value="Sân 4">Sân 4</option>
+                <option value="Sân 5">Sân 5</option>
+                <option value="Sân 6">Sân 6</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button id="saveImageBtn" class="py-2 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs md:text-sm rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer">
+              <span id="saveImageBtnText">Lưu Ảnh Rõ Nét</span>
+            </button>
+            <button id="printBracketBtn" class="py-2 px-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs md:text-sm rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer">
+              In Sơ Đồ
+            </button>
+          </div>
+        </div>
+
+        <div id="exportArea" class="bg-slate-50 p-4 rounded-xl min-w-max">
+          <div class="mb-10 py-2 px-1 rounded-lg flex items-center gap-4">
+            <img id="bracketLogoImg" src="" alt="Logo Giải" class="hidden w-14 h-14 md:w-16 md:h-16 object-contain rounded-xl bg-white p-1 border border-slate-200 shadow-sm shrink-0" />
+            <div class="flex-1">
+              <input 
+                id="tournamentNameInput"
+                type="text"
+                value="Giải Taekwondo Nội Bộ - CLB Vĩ Hồ"
+                class="text-xl md:text-3xl font-black text-slate-800 uppercase tracking-tight bg-transparent border-b-2 border-dashed border-slate-300 focus:border-blue-600 focus:outline-none transition-colors w-full py-1"
+              />
+              <div class="flex flex-wrap items-center gap-3 mt-1.5">
+                <div id="bracketCategorySubtitle" class="text-sm md:text-base font-extrabold text-blue-600 uppercase tracking-wide">
+                  Nội dung: Hạng cân 1
+                </div>
+                <div id="bracketCourtBadge" class="inline-flex items-center justify-center px-3 h-7 rounded-lg bg-amber-500 text-slate-950 font-black text-xs md:text-sm uppercase tracking-wider shadow-sm">
+                  SÂN THI ĐẤU: SÂN 1
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="bracketContent" class="flex items-stretch min-w-max gap-8 pb-16 pt-8"></div>
+        </div>
+      </div>
+
+      <!-- MÀN HÌNH 3: TAB TỔNG HỢP KẾT QUẢ TOÀN ĐOÀN & HUY CHƯƠNG -->
+      <div id="summaryWrapper" class="hidden flex-1 overflow-y-auto bracket-scrollbar p-4 md:p-8 bg-slate-100">
+        <div class="max-w-7xl mx-auto space-y-6">
+          
+          <!-- Banner Tổng hợp -->
+          <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-6 rounded-2xl shadow-xl border border-slate-700 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <span class="text-xs font-black uppercase tracking-widest text-amber-400">Bảng Vàng Thành Tích</span>
+              <h2 id="summaryTournamentTitle" class="text-xl md:text-2xl font-black uppercase mt-0.5">Tổng Hợp Kết Quả Toàn Đoàn</h2>
+              <p class="text-xs text-slate-300 mt-1">Tự động cập nhật từ kết quả Chung kết (HCV, HCB) và Bán kết (Đồng HCĐ) của tất cả các hạng cân.</p>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <button id="exportSummaryExcelBtn" class="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg flex items-center gap-2 cursor-pointer">
+                Xuất Excel Tổng Hợp (.xlsx)
+              </button>
+              <button id="backToBracketBtn" class="py-2.5 px-4 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs rounded-xl border border-slate-600 cursor-pointer">
+                ← Quay Lại Sơ Đồ
+              </button>
+            </div>
+          </div>
+
+          <!-- Bảng 1: Xếp hạng huy chương theo Đơn vị tham gia -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <h3 class="text-sm md:text-base font-black uppercase tracking-wider text-amber-400">1. Bảng Xếp Hạng Huy Chương Toàn Đoàn (Theo Đơn Vị)</h3>
+              <span id="totalCompletedCategoriesBadge" class="text-xs font-bold bg-slate-800 text-slate-300 px-3 py-1 rounded-full">0 nội dung đã có kết quả</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 border-b border-slate-200 text-[11px] font-black uppercase text-slate-600">
+                    <th class="py-3.5 px-4 w-16 text-center">Hạng</th>
+                    <th class="py-3.5 px-4">Đơn Vị Tham Gia</th>
+                    <th class="py-3.5 px-4">Chi Tiết Nội Dung Đạt Giải</th>
+                    <th class="py-3.5 px-4 w-24 text-center bg-yellow-50 text-yellow-800">🥇 HCV</th>
+                    <th class="py-3.5 px-4 w-24 text-center bg-slate-200/70 text-slate-700">🥈 HCB</th>
+                    <th class="py-3.5 px-4 w-24 text-center bg-orange-50 text-orange-800">🥉 HCĐ</th>
+                    <th class="py-3.5 px-4 w-24 text-center">Tổng</th>
+                  </tr>
+                </thead>
+                <tbody id="teamStandingsTableBody" class="divide-y divide-slate-200 text-sm">
+                  <!-- Render bằng JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Bảng 2: Kết quả chi tiết theo từng Nội dung thi đấu -->
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 bg-slate-800 text-white flex items-center justify-between">
+              <h3 class="text-sm md:text-base font-black uppercase tracking-wider text-white">2. Bảng Kết Quả Theo Từng Nội Dung Thi Đấu</h3>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-100 border-b border-slate-200 text-[11px] font-black uppercase text-slate-600">
+                    <th class="py-3.5 px-4 w-12 text-center">STT</th>
+                    <th class="py-3.5 px-4">Nội Dung Thi Đấu (Hạng Cân)</th>
+                    <th class="py-3.5 px-4 w-24 text-center">Sân</th>
+                    <th class="py-3.5 px-4 bg-yellow-50/60 text-yellow-800">🥇 Huy Chương Vàng (Đơn vị)</th>
+                    <th class="py-3.5 px-4 bg-slate-100 text-slate-700">🥈 Huy Chương Bạc (Đơn vị)</th>
+                    <th class="py-3.5 px-4 bg-orange-50/60 text-orange-800">🥉 Đồng Huy Chương Đồng (Đơn vị)</th>
+                  </tr>
+                </thead>
+                <tbody id="categoryMedalsTableBody" class="divide-y divide-slate-200 text-sm">
+                  <!-- Render bằng JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT LOGIC & FIREBASE ================= -->
+  <script>
+    // 1. CẤU HÌNH FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyDGgau_naxHYnys20cEsbm_KnISnNUisRE",
+      authDomain: "schema-7c1f5.firebaseapp.com",
+      databaseURL: "https://schema-7c1f5-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "schema-7c1f5",
+      storageBucket: "schema-7c1f5.firebasestorage.app",
+      messagingSenderId: "166490635200",
+      appId: "1:166490635200:web:c25d3ff49e36fb1479a625",
+      measurementId: "G-DJGLGFXTNT"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const tournamentRef = db.ref('viho_tournament_v1');
+
+    // Mã PIN mặc định cho Admin và Thư ký từng sân (Admin có thể đổi trên web)
+    let systemPins = {
+      admin: "9999",
+      "Sân 1": "1111",
+      "Sân 2": "2222",
+      "Sân 3": "3333",
+      "Sân 4": "4444",
+      "Sân 5": "5555",
+      "Sân 6": "6666"
+    };
+
+    // Trạng thái phân quyền hiện tại: 'viewer' | 'admin' | 'Sân 1' ... 'Sân 6'
+    let currentRole = sessionStorage.getItem('viho_role') || 'viewer';
+    let publicFilterCourt = 'ALL';
+    let isSummaryView = false;
+    let isRemoteUpdating = false;
+    let customLogoDataUrl = "";
+
+    // Tạo cấu trúc Hạng cân mới
+    function createNewCategory(id, title, defaultSize = 8, court = "Sân 1") {
+      return {
+        id: id,
+        title: title,
+        court: court,
+        tournamentName: "Giải Taekwondo Nội Bộ - CLB Vĩ Hồ",
+        size: defaultSize,
+        isBracketVisible: false,
+        participants: Array.from({ length: defaultSize }, (_, i) => ({
+          id: i,
+          name: "",
+          unit: "",
+          seed: ""
+        })),
+        winners: {},
+        matchNumbers: {}
+      };
+    }
+
+    let categories = [createNewCategory(1, "Hạng cân 1", 8, "Sân 1")];
+    let activeCategoryId = 1;
+    let nextCategoryId = 2;
+
+    // Kiểm tra quyền chỉnh sửa đối với 1 hạng cân
+    function canEditCategory(cat) {
+      if (!cat) return false;
+      if (currentRole === 'admin') return true;
+      if (currentRole === (cat.court || 'Sân 1')) return true;
+      return false;
+    }
+
+    // Lấy danh sách hạng cân được phép nhìn thấy theo phân quyền hoặc bộ lọc
+    function getVisibleCategories() {
+      if (currentRole.startsWith('Sân ')) {
+        // Thư ký sân nào chỉ thấy và làm việc trên các hạng cân của sân đó
+        return categories.filter(c => (c.court || 'Sân 1') === currentRole);
+      }
+      if (publicFilterCourt !== 'ALL') {
+        return categories.filter(c => (c.court || 'Sân 1') === publicFilterCourt);
+      }
+      return categories;
+    }
+
+    function getActiveCategory() {
+      const visible = getVisibleCategories();
+      let found = visible.find(c => c.id === activeCategoryId);
+      if (!found && visible.length > 0) {
+        found = visible[0];
+        activeCategoryId = found.id;
+      }
+      return found || categories[0];
+    }
+
+    // Chuẩn hóa dữ liệu từ Firebase (vì Firebase hay làm mất object rỗng)
+    function normalizeCategories(rawCats) {
+      if (!Array.isArray(rawCats) || rawCats.length === 0) {
+        return [createNewCategory(1, "Hạng cân 1", 8, "Sân 1")];
+      }
+      return rawCats.map((c, idx) => {
+        const size = Number(c.size) || 8;
+        const rawParts = Array.isArray(c.participants) ? c.participants : [];
+        return {
+          id: c.id || (idx + 1),
+          title: c.title || `Hạng cân ${idx + 1}`,
+          court: c.court || "Sân 1",
+          tournamentName: c.tournamentName || "Giải Taekwondo Nội Bộ - CLB Vĩ Hồ",
+          size: size,
+          isBracketVisible: Boolean(c.isBracketVisible),
+          participants: Array.from({ length: size }, (_, i) => ({
+            id: i,
+            name: rawParts[i]?.name || "",
+            unit: rawParts[i]?.unit || "",
+            seed: rawParts[i]?.seed !== undefined && rawParts[i]?.seed !== null ? rawParts[i].seed : ""
+          })),
+          winners: c.winners || {},
+          matchNumbers: c.matchNumbers || {}
+        };
+      });
+    }
+
+    // Lưu dữ liệu lên Firebase Realtime Database
+    let saveTimeout = null;
+    function saveToFirebase() {
+      if (currentRole === 'viewer' || isRemoteUpdating) return;
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        tournamentRef.update({
+          categories: categories,
+          nextCategoryId: nextCategoryId,
+          logoUrl: customLogoDataUrl || "",
+          updatedAt: firebase.database.ServerValue.TIMESTAMP
+        }).catch(err => {
+          console.error("Firebase save error:", err);
+        });
+      }, 250);
+    }
+
+    // Lắng nghe dữ liệu thời gian thực từ Firebase
+    function initFirebaseListeners() {
+      const dot = document.getElementById('firebaseStatusDot');
+      const text = document.getElementById('firebaseStatusText');
+
+      db.ref('.info/connected').on('value', (snap) => {
+        if (snap.val() === true) {
+          dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+          text.textContent = "Đã đồng bộ trực tuyến";
+        } else {
+          dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+          text.textContent = "Ngoại tuyến (Tự động kết nối lại)";
+        }
+      });
+
+      tournamentRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+          // Khởi tạo lần đầu nếu DB trống
+          tournamentRef.set({
+            categories: categories,
+            nextCategoryId: nextCategoryId,
+            pins: systemPins,
+            logoUrl: ""
+          });
+          return;
+        }
+
+        isRemoteUpdating = true;
+        if (data.pins) {
+          systemPins = { ...systemPins, ...data.pins };
+        }
+        if (data.categories) {
+          categories = normalizeCategories(data.categories);
+        }
+        if (data.nextCategoryId) {
+          nextCategoryId = data.nextCategoryId;
+        }
+        if (data.logoUrl !== undefined) {
+          customLogoDataUrl = data.logoUrl;
+          applyLogoToUI(customLogoDataUrl);
+        }
+
+        syncUIFromActiveCategory();
+        if (isSummaryView) {
+          renderSummaryView();
+        }
+        isRemoteUpdating = false;
+      });
+    }
+
+    // DOM Elements
+    const leftSidebar = document.getElementById('leftSidebar');
+    const sizeSelect = document.getElementById('sizeSelect');
+    const drawBtn = document.getElementById('drawBtn');
+    const fillSampleBtn = document.getElementById('fillSampleBtn');
+    const participantsList = document.getElementById('participantsList');
+    const emptyState = document.getElementById('emptyState');
+    const bracketWrapper = document.getElementById('bracketWrapper');
+    const summaryWrapper = document.getElementById('summaryWrapper');
+    const bracketContent = document.getElementById('bracketContent');
+    const exportArea = document.getElementById('exportArea');
+    const tournamentNameInput = document.getElementById('tournamentNameInput');
+    const categoryNameInput = document.getElementById('categoryNameInput');
+    const sidebarCategoryNameInput = document.getElementById('sidebarCategoryNameInput');
+    const sidebarCourtSelect = document.getElementById('sidebarCourtSelect');
+    const toolbarCourtSelect = document.getElementById('toolbarCourtSelect');
+    const bracketCategorySubtitle = document.getElementById('bracketCategorySubtitle');
+    const bracketCourtBadge = document.getElementById('bracketCourtBadge');
+    const tabsContainer = document.getElementById('tabsContainer');
+    const addCategoryBtn = document.getElementById('addCategoryBtn');
+    const openScheduleModalBtn = document.getElementById('openScheduleModalBtn');
+
+    function showToast(message, type = 'success') {
+      const toastContainer = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bgClass = type === 'error' ? 'bg-red-600' : 'bg-slate-800 border border-slate-600';
+      toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-2xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all duration-300`;
+      toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+      toastContainer.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3200);
+    }
+
+    // ================= QUẢN LÝ GIAO DIỆN PHÂN QUYỀN =================
+    function applyRolePermissionsUI() {
+      const roleBadge = document.getElementById('currentRoleBadge');
+      const authBtnText = document.getElementById('authBtnText');
+      const openPinSettingBtn = document.getElementById('openPinSettingBtn');
+      const publicCourtFilter = document.getElementById('publicCourtFilter');
+
+      const current = getActiveCategory();
+      const editable = canEditCategory(current);
+
+      if (currentRole === 'admin') {
+        roleBadge.className = "px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-purple-600 text-white shadow";
+        roleBadge.textContent = "👑 QUẢN TRỊ VIÊN (TOÀN QUYỀN)";
+        authBtnText.textContent = "Đổi Quyền / Thoát";
+        openPinSettingBtn.classList.remove('hidden');
+        openPinSettingBtn.classList.add('flex');
+        publicCourtFilter.disabled = false;
+      } else if (currentRole.startsWith('Sân ')) {
+        roleBadge.className = "px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-amber-500 text-slate-950 shadow";
+        roleBadge.textContent = `📝 THƯ KÝ ${currentRole.toUpperCase()}`;
+        authBtnText.textContent = "Đổi Sân / Thoát";
+        openPinSettingBtn.classList.add('hidden');
+        openPinSettingBtn.classList.remove('flex');
+        publicCourtFilter.value = currentRole;
+        publicCourtFilter.disabled = true;
+      } else {
+        roleBadge.className = "px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700";
+        roleBadge.textContent = "👁️ Chế độ Xem (VĐV & Phụ huynh)";
+        authBtnText.textContent = "Đăng Nhập Thư Ký / Admin";
+        openPinSettingBtn.classList.add('hidden');
+        openPinSettingBtn.classList.remove('flex');
+        publicCourtFilter.disabled = false;
+      }
+
+      // Ẩn/Hiện Sidebar nhập liệu khi không có quyền hoặc đang ở màn hình Tổng hợp
+      if (editable && !isSummaryView) {
+        leftSidebar.classList.remove('hidden');
+        leftSidebar.classList.add('flex');
+      } else {
+        leftSidebar.classList.add('hidden');
+        leftSidebar.classList.remove('flex');
+      }
+
+      // Quyền thêm hạng cân & xếp lịch
+      if (currentRole === 'admin' || currentRole.startsWith('Sân ')) {
+        addCategoryBtn.classList.remove('hidden');
+        addCategoryBtn.classList.add('flex');
+        openScheduleModalBtn.classList.remove('hidden');
+        openScheduleModalBtn.classList.add('flex');
+      } else {
+        addCategoryBtn.classList.add('hidden');
+        addCategoryBtn.classList.remove('flex');
+        openScheduleModalBtn.classList.add('hidden');
+        openScheduleModalBtn.classList.remove('flex');
+      }
+
+      // Thư ký sân không được tự ý chuyển hạng cân sang sân khác
+      const isSecretary = currentRole.startsWith('Sân ');
+      sidebarCourtSelect.disabled = isSecretary || !editable;
+      toolbarCourtSelect.disabled = isSecretary || !editable;
+      categoryNameInput.disabled = !editable;
+      tournamentNameInput.disabled = !editable;
+    }
+
+    // Xử lý Modal Đăng nhập
+    const authModal = document.getElementById('authModal');
+    const loginRoleSelect = document.getElementById('loginRoleSelect');
+    const pinInputWrapper = document.getElementById('pinInputWrapper');
+    const loginPinInput = document.getElementById('loginPinInput');
+
+    document.getElementById('openAuthModalBtn').addEventListener('click', () => {
+      loginRoleSelect.value = currentRole;
+      loginPinInput.value = "";
+      pinInputWrapper.classList.toggle('hidden', loginRoleSelect.value === 'viewer');
+      authModal.classList.remove('hidden');
+    });
+
+    document.getElementById('closeAuthModalBtn').addEventListener('click', () => {
+      authModal.classList.add('hidden');
+    });
+
+    loginRoleSelect.addEventListener('change', () => {
+      pinInputWrapper.classList.toggle('hidden', loginRoleSelect.value === 'viewer');
+      loginPinInput.focus();
+    });
+
+    document.getElementById('confirmLoginBtn').addEventListener('click', () => {
+      const selectedRole = loginRoleSelect.value;
+      if (selectedRole === 'viewer') {
+        currentRole = 'viewer';
+        sessionStorage.setItem('viho_role', 'viewer');
+        authModal.classList.add('hidden');
+        syncUIFromActiveCategory();
+        showToast('Đã chuyển sang Chế độ Xem (Dành cho VĐV & Phụ huynh)');
+        return;
+      }
+
+      const enteredPin = loginPinInput.value.trim();
+      const expectedPin = systemPins[selectedRole];
+
+      if (enteredPin === String(expectedPin)) {
+        currentRole = selectedRole;
+        sessionStorage.setItem('viho_role', selectedRole);
+
+        // Nếu thư ký đăng nhập nhưng sân đó chưa có hạng cân nào, tự tạo sẵn 1 hạng cân cho sân đó
+        if (selectedRole.startsWith('Sân ')) {
+          const hasCourtCat = categories.some(c => (c.court || 'Sân 1') === selectedRole);
+          if (!hasCourtCat) {
+            const newCat = createNewCategory(nextCategoryId++, `Hạng cân 1 (${selectedRole})`, 8, selectedRole);
+            categories.push(newCat);
+            activeCategoryId = newCat.id;
+            saveToFirebase();
+          }
+        }
+
+        authModal.classList.add('hidden');
+        syncUIFromActiveCategory();
+        showToast(`Đăng nhập thành công quyền: ${selectedRole.toUpperCase()}!`);
+      } else {
+        showToast('Mã PIN không chính xác, vui lòng kiểm tra lại!', 'error');
+      }
+    });
+
+    // Quản lý cài đặt mã PIN (Admin)
+    const pinSettingModal = document.getElementById('pinSettingModal');
+    const pinSettingsForm = document.getElementById('pinSettingsForm');
+
+    document.getElementById('openPinSettingBtn').addEventListener('click', () => {
+      if (currentRole !== 'admin') return;
+      const roles = ['admin', 'Sân 1', 'Sân 2', 'Sân 3', 'Sân 4', 'Sân 5', 'Sân 6'];
+      pinSettingsForm.innerHTML = roles.map(r => `
+        <div class="flex items-center justify-between bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-700">
+          <span class="text-xs font-bold ${r === 'admin' ? 'text-purple-400 uppercase' : 'text-amber-400'}">
+            ${r === 'admin' ? '👑 Mã PIN Admin' : `📝 Mã PIN Thư ký ${r}`}
+          </span>
+          <input type="text" data-pin-role="${r}" value="${escapeHtml(systemPins[r] || '')}" class="pin-config-input w-28 bg-slate-900 border border-slate-600 rounded-lg px-2.5 py-1 text-center font-black text-sm text-white focus:outline-none focus:border-purple-500" />
+        </div>
+      `).join('');
+      pinSettingModal.classList.remove('hidden');
+    });
+
+    document.getElementById('closePinSettingBtn').addEventListener('click', () => {
+      pinSettingModal.classList.add('hidden');
+    });
+
+    document.getElementById('savePinsBtn').addEventListener('click', () => {
+      const inputs = pinSettingsForm.querySelectorAll('.pin-config-input');
+      inputs.forEach(inp => {
+        const role = inp.getAttribute('data-pin-role');
+        const val = inp.value.trim();
+        if (val) systemPins[role] = val;
+      });
+      tournamentRef.child('pins').set(systemPins);
+      pinSettingModal.classList.add('hidden');
+      showToast('Đã cập nhật mã PIN mới lên Firebase!');
+    });
+
+    // Bộ lọc sân công khai
+    document.getElementById('publicCourtFilter').addEventListener('change', (e) => {
+      publicFilterCourt = e.target.value;
+      syncUIFromActiveCategory();
+    });
+
+    // Copy Link Chia sẻ cho VĐV & Phụ huynh
+    document.getElementById('sharePublicLinkBtn').addEventListener('click', () => {
+      const shareUrl = window.location.origin + window.location.pathname;
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('Đã sao chép Link Xem Kết Quả! Bạn có thể gửi cho VĐV & Phụ huynh.');
+      }).catch(() => {
+        prompt("Sao chép đường link dưới đây để gửi cho VĐV & Phụ huynh:", shareUrl);
+      });
+    });
+
+    // ================= RENDER TABS HẠNG CÂN =================
+    function renderCategoryTabs() {
+      tabsContainer.innerHTML = '';
+      const visibleCats = getVisibleCategories();
+
+      visibleCats.forEach((cat) => {
+        const isActive = cat.id === activeCategoryId && !isSummaryView;
+        const canDel = canEditCategory(cat) && visibleCats.length > 1;
+        const tabEl = document.createElement('div');
+        tabEl.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 select-none border ${
+          isActive 
+            ? 'bg-blue-600 text-white border-blue-500 shadow-md' 
+            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+        }`;
+
+        const statusDot = cat.isBracketVisible 
+          ? `<span class="w-2 h-2 rounded-full bg-emerald-400 inline-block" title="Đã có sơ đồ"></span>` 
+          : `<span class="w-2 h-2 rounded-full bg-slate-500 inline-block" title="Chưa bốc thăm"></span>`;
+
+        tabEl.innerHTML = `
+          ${statusDot}
+          <span class="max-w-[140px] truncate">${escapeHtml(cat.title || 'Hạng cân')}</span>
+          <span class="px-1.5 py-0.5 text-[10px] rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-extrabold">${escapeHtml(cat.court || 'Sân 1')}</span>
+          ${canDel ? `
+            <button data-del-id="${cat.id}" title="Xóa hạng cân này" class="del-tab-btn ml-1 p-0.5 rounded hover:bg-black/20 text-current opacity-70 hover:opacity-100">
+              ✕
+            </button>
+          ` : ''}
+        `;
+
+        tabEl.addEventListener('click', (e) => {
+          if (e.target.closest('.del-tab-btn')) return;
+          isSummaryView = false;
+          activeCategoryId = cat.id;
+          syncUIFromActiveCategory();
+        });
+
+        const delBtn = tabEl.querySelector('.del-tab-btn');
+        if (delBtn) {
+          delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!canEditCategory(cat) || categories.length <= 1) return;
+            categories = categories.filter(c => c.id !== cat.id);
+            const remaining = getVisibleCategories();
+            if (remaining.length > 0) activeCategoryId = remaining[0].id;
+            saveToFirebase();
+            syncUIFromActiveCategory();
+            showToast(`Đã xóa "${cat.title}"`);
+          });
+        }
+
+        tabsContainer.appendChild(tabEl);
+      });
+    }
+
+    function syncUIFromActiveCategory() {
+      applyRolePermissionsUI();
+      const current = getActiveCategory();
+      if (!current) return;
+
+      sizeSelect.value = String(current.size);
+      tournamentNameInput.value = current.tournamentName;
+      categoryNameInput.value = current.title;
+      sidebarCategoryNameInput.value = current.title;
+      sidebarCourtSelect.value = current.court || "Sân 1";
+      toolbarCourtSelect.value = current.court || "Sân 1";
+      bracketCategorySubtitle.textContent = `Nội dung: ${current.title || '---'}`;
+      bracketCourtBadge.textContent = `SÂN THI ĐẤU: ${(current.court || 'Sân 1').toUpperCase()}`;
+
+      renderCategoryTabs();
+      renderParticipantsList();
+
+      if (isSummaryView) {
+        emptyState.classList.add('hidden');
+        bracketWrapper.classList.add('hidden');
+        summaryWrapper.classList.remove('hidden');
+        document.getElementById('toggleSummaryViewText').textContent = "Xem Sơ Đồ Thi Đấu";
+        renderSummaryView();
+      } else {
+        summaryWrapper.classList.add('hidden');
+        document.getElementById('toggleSummaryViewText').textContent = "Tổng Hợp Toàn Đoàn";
+        renderBracket();
+      }
+    }
+
+    // Thêm hạng cân mới (Thư ký sân nào tạo sẽ mặc định gán vào sân đó)
+    addCategoryBtn.addEventListener('click', () => {
+      const current = getActiveCategory();
+      const assignedCourt = currentRole.startsWith('Sân ') ? currentRole : (current?.court || "Sân 1");
+      const newCat = createNewCategory(nextCategoryId++, `Hạng cân ${categories.length + 1}`, 8, assignedCourt);
+      if (current) newCat.tournamentName = current.tournamentName;
+      categories.push(newCat);
+      activeCategoryId = newCat.id;
+      isSummaryView = false;
+      saveToFirebase();
+      syncUIFromActiveCategory();
+      showToast(`Đã thêm "${newCat.title}" (${newCat.court})!`);
+    });
+
+    tournamentNameInput.addEventListener('input', (e) => {
+      const current = getActiveCategory();
+      if (!canEditCategory(current)) return;
+      current.tournamentName = e.target.value;
+      saveToFirebase();
+    });
+
+    function updateCategoryTitle(newTitle) {
+      const current = getActiveCategory();
+      if (!canEditCategory(current)) return;
+      current.title = newTitle;
+      categoryNameInput.value = newTitle;
+      sidebarCategoryNameInput.value = newTitle;
+      bracketCategorySubtitle.textContent = `Nội dung: ${current.title || '---'}`;
+      renderCategoryTabs();
+      saveToFirebase();
+    }
+
+    categoryNameInput.addEventListener('input', (e) => updateCategoryTitle(e.target.value));
+    sidebarCategoryNameInput.addEventListener('input', (e) => updateCategoryTitle(e.target.value));
+
+    function updateCategoryCourt(newCourt) {
+      if (currentRole !== 'admin') {
+        showToast('Chỉ Admin mới có quyền chuyển hạng cân sang sân khác!', 'error');
+        return;
+      }
+      const current = getActiveCategory();
+      current.court = newCourt;
+      sidebarCourtSelect.value = newCourt;
+      toolbarCourtSelect.value = newCourt;
+      bracketCourtBadge.textContent = `SÂN THI ĐẤU: ${newCourt.toUpperCase()}`;
+      renderCategoryTabs();
+      saveToFirebase();
+    }
+
+    sidebarCourtSelect.addEventListener('change', (e) => updateCategoryCourt(e.target.value));
+    toolbarCourtSelect.addEventListener('change', (e) => updateCategoryCourt(e.target.value));
+
+    // ================= XẾP LỊCH & ĐÁNH SỐ TRẬN THEO SÂN =================
+    const scheduleModal = document.getElementById('scheduleModal');
+    const scheduleCourtSelect = document.getElementById('scheduleCourtSelect');
+    const scheduleStartNumInput = document.getElementById('scheduleStartNumInput');
+    const scheduleCategoriesList = document.getElementById('scheduleCategoriesList');
+
+    function renderScheduleModalList() {
+      const selectedCourt = scheduleCourtSelect.value;
+      scheduleCategoriesList.innerHTML = '';
+
+      const listToShow = currentRole.startsWith('Sân ')
+        ? categories.filter(c => (c.court || 'Sân 1') === currentRole)
+        : categories;
+
+      listToShow.forEach((cat) => {
+        const isSameCourt = (cat.court || 'Sân 1') === selectedCourt;
+        const item = document.createElement('label');
+        item.className = `flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition-colors ${
+          isSameCourt ? 'bg-slate-800/90 border-amber-500/40 text-white' : 'bg-slate-900/50 border-slate-800 text-slate-400'
+        }`;
+
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <input type="checkbox" value="${cat.id}" ${isSameCourt ? 'checked' : ''} class="schedule-cat-checkbox w-4 h-4 accent-amber-500 rounded cursor-pointer" />
+            <span class="font-bold">${escapeHtml(cat.title || 'Hạng cân')}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">${cat.size} VĐV</span>
+          </div>
+          <span class="text-[11px] font-bold ${isSameCourt ? 'text-amber-400' : 'text-slate-500'}">${escapeHtml(cat.court || 'Sân 1')}</span>
+        `;
+        scheduleCategoriesList.appendChild(item);
+      });
+    }
+
+    openScheduleModalBtn.addEventListener('click', () => {
+      const current = getActiveCategory();
+      if (currentRole.startsWith('Sân ')) {
+        scheduleCourtSelect.value = currentRole;
+        scheduleCourtSelect.disabled = true;
+      } else {
+        scheduleCourtSelect.value = current.court || 'Sân 1';
+        scheduleCourtSelect.disabled = false;
+      }
+      renderScheduleModalList();
+      scheduleModal.classList.remove('hidden');
+    });
+
+    document.getElementById('closeScheduleModalBtn').addEventListener('click', () => scheduleModal.classList.add('hidden'));
+    scheduleCourtSelect.addEventListener('change', () => renderScheduleModalList());
+    document.getElementById('selectAllCourtCatsBtn').addEventListener('click', () => {
+      scheduleCategoriesList.querySelectorAll('.schedule-cat-checkbox').forEach(cb => cb.checked = true);
+    });
+
+    document.getElementById('clearScheduleBtn').addEventListener('click', () => {
+      const selectedCourt = scheduleCourtSelect.value;
+      categories.forEach(cat => {
+        if ((cat.court || 'Sân 1') === selectedCourt && canEditCategory(cat)) {
+          cat.matchNumbers = {};
+        }
+      });
+      saveToFirebase();
+      renderBracket();
+      scheduleModal.classList.add('hidden');
+      showToast(`Đã xóa số trận của ${selectedCourt}!`);
+    });
+
+    document.getElementById('applyScheduleBtn').addEventListener('click', () => {
+      const selectedCourt = scheduleCourtSelect.value;
+      let currentMatchNum = parseInt(scheduleStartNumInput.value, 10) || 1;
+
+      const checkedIds = Array.from(scheduleCategoriesList.querySelectorAll('.schedule-cat-checkbox:checked'))
+        .map(cb => parseInt(cb.value, 10));
+
+      if (checkedIds.length === 0) {
+        showToast('Vui lòng chọn ít nhất 1 hạng cân!', 'error');
+        return;
+      }
+
+      const selectedCats = categories.filter(c => checkedIds.includes(c.id) && canEditCategory(c));
+      selectedCats.forEach(cat => {
+        cat.court = selectedCourt;
+        cat.matchNumbers = {};
+      });
+
+      const maxRounds = Math.max(...selectedCats.map(c => Math.log2(c.size)));
+
+      for (let stageFromFinal = maxRounds - 1; stageFromFinal >= 0; stageFromFinal--) {
+        const catQueues = [];
+        selectedCats.forEach(cat => {
+          const totalRounds = Math.log2(cat.size);
+          const rIndex = totalRounds - 1 - stageFromFinal;
+          if (rIndex >= 0 && rIndex < totalRounds) {
+            const numMatches = cat.size / Math.pow(2, rIndex + 1);
+            const matchesInRound = [];
+            for (let m = 0; m < numMatches; m++) {
+              matchesInRound.push(`r${rIndex}-m${m}`);
+            }
+            catQueues.push({ cat, matches: matchesInRound });
+          }
+        });
+
+        let hasRemaining = true;
+        let pointer = 0;
+        while (hasRemaining) {
+          hasRemaining = false;
+          for (let q of catQueues) {
+            if (pointer < q.matches.length) {
+              const matchId = q.matches[pointer];
+              q.cat.matchNumbers[matchId] = currentMatchNum++;
+              hasRemaining = true;
+            }
+          }
+          pointer++;
+        }
+      }
+
+      saveToFirebase();
+      syncUIFromActiveCategory();
+      scheduleModal.classList.add('hidden');
+      showToast(`Đã đánh số từ Trận ${scheduleStartNumInput.value} đến Trận ${currentMatchNum - 1} cho ${selectedCourt}!`);
+    });
+
+    // ================= DANH SÁCH NHẬP LIỆU & TÍNH TOÁN SƠ ĐỒ =================
+    function renderParticipantsList() {
+      const current = getActiveCategory();
+      if (!current) return;
+      const { participants, size } = current;
+      const editable = canEditCategory(current);
+      participantsList.innerHTML = '';
+
+      participants.forEach((p, index) => {
+        const row = document.createElement('div');
+        row.className = 'grid grid-cols-12 gap-2 items-center';
+
+        const hasSeed = p.seed !== "" && p.seed !== null && p.seed !== undefined;
+        const seedClass = hasSeed 
+          ? 'bg-blue-900/60 border-blue-500 text-blue-300' 
+          : 'bg-slate-800 border-slate-700 text-slate-400';
+
+        row.innerHTML = `
+          <div class="col-span-2 flex justify-center">
+            <input
+              type="number"
+              min="1"
+              max="${size}"
+              placeholder="?"
+              value="${p.seed}"
+              data-index="${index}"
+              data-field="seed"
+              ${!editable ? 'disabled' : ''}
+              class="participant-input w-11 h-9 text-center rounded-lg font-black text-sm transition-colors border focus:outline-none focus:border-orange-500 ${seedClass}"
+            />
+          </div>
+          <div class="col-span-6">
+            <input
+              type="text"
+              placeholder="Tên VĐV ${index + 1}..."
+              value="${escapeHtml(p.name)}"
+              data-index="${index}"
+              data-field="name"
+              ${!editable ? 'disabled' : ''}
+              class="participant-input w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+          </div>
+          <div class="col-span-4">
+            <input
+              type="text"
+              placeholder="Đơn vị..."
+              value="${escapeHtml(p.unit)}"
+              data-index="${index}"
+              data-field="unit"
+              ${!editable ? 'disabled' : ''}
+              class="participant-input w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
+            />
+          </div>
+        `;
+        participantsList.appendChild(row);
+      });
+
+      if (!editable) return;
+
+      const inputs = participantsList.querySelectorAll('.participant-input');
+      inputs.forEach(input => {
+        input.addEventListener('input', (e) => {
+          const currentCat = getActiveCategory();
+          if (!canEditCategory(currentCat)) return;
+          const idx = parseInt(e.target.getAttribute('data-index'), 10);
+          const field = e.target.getAttribute('data-field');
+          let val = e.target.value;
+
+          if (field === 'seed') {
+            val = val === '' ? '' : parseInt(val, 10);
+            currentCat.participants[idx].seed = val;
+            if (val) {
+              e.target.className = "participant-input w-11 h-9 text-center rounded-lg font-black text-sm transition-colors border focus:outline-none focus:border-orange-500 bg-blue-900/60 border-blue-500 text-blue-300";
+              if (!currentCat.isBracketVisible) {
+                currentCat.isBracketVisible = true;
+                renderCategoryTabs();
+              }
+            } else {
+              e.target.className = "participant-input w-11 h-9 text-center rounded-lg font-black text-sm transition-colors border focus:outline-none focus:border-orange-500 bg-slate-800 border-slate-700 text-slate-400";
+            }
+          } else {
+            currentCat.participants[idx][field] = val;
+          }
+
+          saveToFirebase();
+          if (currentCat.isBracketVisible) {
+            renderBracket();
+          }
+        });
+      });
+    }
+
+    // Tính toán kết quả các vòng & trích xuất HCV, HCB, Đồng HCĐ cho 1 hạng cân bất kỳ
+    function calculateCategoryBracket(cat) {
+      const { size, participants, winners = {} } = cat;
+      const generatedRounds = [];
+      const numRounds = Math.log2(size);
+
+      for (let r = 0; r < numRounds; r++) {
+        const numMatches = size / Math.pow(2, r + 1);
+        const roundMatches = [];
+
+        for (let m = 0; m < numMatches; m++) {
+          let p1 = null, p2 = null;
+
+          if (r === 0) {
+            const seed1 = m * 2 + 1;
+            const seed2 = m * 2 + 2;
+            p1 = participants.find(p => Number(p.seed) === seed1) || { name: "", unit: "", seed: seed1, isEmpty: true };
+            p2 = participants.find(p => Number(p.seed) === seed2) || { name: "", unit: "", seed: seed2, isEmpty: true };
+          } else {
+            const prevM1 = generatedRounds[r - 1][m * 2];
+            const prevM2 = generatedRounds[r - 1][m * 2 + 1];
+            p1 = prevM1.winnerPos === 1 ? prevM1.p1 : (prevM1.winnerPos === 2 ? prevM1.p2 : null);
+            p2 = prevM2.winnerPos === 1 ? prevM2.p1 : (prevM2.winnerPos === 2 ? prevM2.p2 : null);
+          }
+
+          const matchId = `r${r}-m${m}`;
+          const winnerPos = winners[matchId];
+          roundMatches.push({ id: matchId, p1, p2, winnerPos });
+        }
+        generatedRounds.push(roundMatches);
+      }
+
+      const finalMatch = generatedRounds[numRounds - 1][0];
+      let gold = null;
+      let silver = null;
+      const bronzes = [];
+
+      if (finalMatch) {
+        if (finalMatch.winnerPos === 1) {
+          gold = finalMatch.p1;
+          silver = finalMatch.p2;
+        } else if (finalMatch.winnerPos === 2) {
+          gold = finalMatch.p2;
+          silver = finalMatch.p1;
+        }
+      }
+
+      // 2 VĐV thua ở Bán kết nhận Đồng HCĐ
+      if (numRounds >= 2) {
+        const semiMatches = generatedRounds[numRounds - 2];
+        semiMatches.forEach(sm => {
+          if (sm.winnerPos === 1 && sm.p2 && !sm.p2.isEmpty && (sm.p2.name || sm.p2.unit)) {
+            bronzes.push(sm.p2);
+          } else if (sm.winnerPos === 2 && sm.p1 && !sm.p1.isEmpty && (sm.p1.name || sm.p1.unit)) {
+            bronzes.push(sm.p1);
+          }
+        });
+      }
+
+      return { rounds: generatedRounds, champion: gold, gold, silver, bronzes };
+    }
+
+    function renderBracket() {
+      const current = getActiveCategory();
+      if (!current || !current.isBracketVisible) {
+        emptyState.classList.remove('hidden');
+        bracketWrapper.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      bracketWrapper.classList.remove('hidden');
+
+      const editable = canEditCategory(current);
+      const { rounds, champion } = calculateCategoryBracket(current);
+      bracketContent.innerHTML = '';
+
+      rounds.forEach((round, rIndex) => {
+        const roundCol = document.createElement('div');
+        roundCol.className = 'flex flex-col justify-around w-72 xl:w-80 relative shrink-0';
+
+        let roundTitle = `Vòng ${rIndex + 1}`;
+        if (rIndex === rounds.length - 1) roundTitle = "Chung Kết";
+        else if (rIndex === rounds.length - 2) roundTitle = "Bán Kết";
+        else if (rIndex === rounds.length - 3) roundTitle = "Tứ Kết";
+
+        const titleEl = document.createElement('div');
+        titleEl.className = 'round-badge absolute -top-9 left-0 right-0 h-8 flex items-center justify-center text-center text-xs font-extrabold text-slate-600 uppercase tracking-widest bg-slate-200 border border-slate-300/80 rounded-lg shadow-xs leading-none';
+        titleEl.innerHTML = `<span class="inline-block leading-none">${escapeHtml(roundTitle)}</span>`;
+        roundCol.appendChild(titleEl);
+
+        round.forEach((match, mIndex) => {
+          const isFinal = rIndex === rounds.length - 1;
+          const hasP1 = match.p1 && !match.p1.isEmpty;
+          const hasP2 = match.p2 && !match.p2.isEmpty;
+
+          const p1Name = hasP1 ? (match.p1.name || `VĐV Số ${match.p1.seed}`) : (rIndex === 0 ? "Chưa có VĐV" : "Chờ kết quả...");
+          const p1Unit = hasP1 ? (match.p1.unit || "---") : "---";
+          const p1Seed = match.p1 && match.p1.seed ? match.p1.seed : "-";
+
+          const p2Name = hasP2 ? (match.p2.name || `VĐV Số ${match.p2.seed}`) : (rIndex === 0 ? "Chưa có VĐV" : "Chờ kết quả...");
+          const p2Unit = hasP2 ? (match.p2.unit || "---") : "---";
+          const p2Seed = match.p2 && match.p2.seed ? match.p2.seed : "-";
+
+          const scheduledMatchNo = current.matchNumbers ? current.matchNumbers[match.id] : null;
+
+          const matchWrapper = document.createElement('div');
+          matchWrapper.className = 'relative flex-1 flex flex-col justify-center py-2.5';
+
+          const inputLineHtml = rIndex > 0 
+            ? `<div class="absolute top-1/2 -left-4 w-4 border-t-2 border-slate-300"></div>` 
+            : '';
+
+          let outputLineHtml = '';
+          if (!isFinal) {
+            if (mIndex % 2 === 0) {
+              outputLineHtml = `<div class="absolute top-1/2 -right-4 w-4 h-full border-t-2 border-r-2 border-slate-300 rounded-tr-md pointer-events-none"></div>`;
+            } else {
+              outputLineHtml = `<div class="absolute top-1/2 -right-4 w-4 border-t-2 border-slate-300 pointer-events-none"></div>`;
+            }
+          } else {
+            outputLineHtml = `<div class="absolute top-1/2 -right-8 w-8 border-t-2 border-yellow-400 pointer-events-none"></div>`;
+          }
+
+          const cursorClass = editable ? 'cursor-pointer' : 'cursor-default';
+
+          matchWrapper.innerHTML = `
+            ${inputLineHtml}
+            <div class="bg-white rounded-xl shadow-sm hover:shadow-md border border-slate-200 relative z-10 transition-all duration-150">
+              <div class="bg-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-500 flex items-center justify-between uppercase border-b border-slate-200 rounded-t-xl gap-2">
+                <span>Nhánh ${mIndex + 1} (${roundTitle})</span>
+                <div class="flex items-center gap-1.5">
+                  ${scheduledMatchNo ? `
+                    <span class="match-no-badge inline-flex items-center justify-center px-2 h-5 rounded bg-amber-500 text-slate-950 font-black text-[11px] tracking-wide shadow-xs leading-none">
+                      TRẬN ${scheduledMatchNo}
+                    </span>
+                  ` : ''}
+                  ${isFinal ? '<span class="text-orange-600 font-black">★ CHUNG KẾT</span>' : ''}
+                </div>
+              </div>
+
+              <!-- VĐV 1 -->
+              <div 
+                data-match="${match.id}" 
+                data-pos="1"
+                class="slot-btn p-2.5 border-l-4 ${cursorClass} transition-colors border-b border-slate-100 flex justify-between items-center gap-2 select-none
+                  ${hasP1 && editable ? 'hover:bg-blue-50/80' : (!hasP1 ? 'bg-slate-50/60 opacity-60' : '')}
+                  ${match.winnerPos === 1 ? 'border-l-blue-600 bg-blue-50/90' : 'border-l-blue-500'}"
+              >
+                <div class="flex flex-col pr-1 flex-1 min-w-0">
+                  <span class="text-xs xl:text-sm leading-snug break-words ${match.winnerPos === 1 ? 'font-black text-blue-900' : 'font-semibold text-slate-800'}">
+                    ${escapeHtml(p1Name)}
+                  </span>
+                  <span class="text-[11px] leading-snug text-slate-500 font-medium break-words mt-0.5">
+                    Đơn vị: <strong class="text-slate-700">${escapeHtml(p1Unit)}</strong>
+                  </span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  ${match.winnerPos === 1 ? '<span class="text-blue-600 text-xs font-black">✔</span>' : ''}
+                  <span class="seed-badge inline-flex w-7 h-7 items-center justify-center bg-blue-600 text-white rounded-md text-xs font-black shadow-sm leading-none">
+                    ${p1Seed}
+                  </span>
+                </div>
+              </div>
+
+              <!-- VĐV 2 -->
+              <div 
+                data-match="${match.id}" 
+                data-pos="2"
+                class="slot-btn p-2.5 border-l-4 ${cursorClass} transition-colors flex justify-between items-center gap-2 select-none rounded-b-xl
+                  ${hasP2 && editable ? 'hover:bg-red-50/80' : (!hasP2 ? 'bg-slate-50/60 opacity-60' : '')}
+                  ${match.winnerPos === 2 ? 'border-l-red-600 bg-red-50/90' : 'border-l-red-500'}"
+              >
+                <div class="flex flex-col pr-1 flex-1 min-w-0">
+                  <span class="text-xs xl:text-sm leading-snug break-words ${match.winnerPos === 2 ? 'font-black text-red-900' : 'font-semibold text-slate-800'}">
+                    ${escapeHtml(p2Name)}
+                  </span>
+                  <span class="text-[11px] leading-snug text-slate-500 font-medium break-words mt-0.5">
+                    Đơn vị: <strong class="text-slate-700">${escapeHtml(p2Unit)}</strong>
+                  </span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  ${match.winnerPos === 2 ? '<span class="text-red-600 text-xs font-black">✔</span>' : ''}
+                  <span class="seed-badge inline-flex w-7 h-7 items-center justify-center bg-red-600 text-white rounded-md text-xs font-black shadow-sm leading-none">
+                    ${p2Seed}
+                  </span>
+                </div>
+              </div>
+            </div>
+            ${outputLineHtml}
+          `;
+
+          if (editable) {
+            const slotBtns = matchWrapper.querySelectorAll('.slot-btn');
+            slotBtns.forEach(btn => {
+              btn.addEventListener('click', () => {
+                if (!canEditCategory(current)) return;
+                const pos = parseInt(btn.getAttribute('data-pos'), 10);
+                const selectedPlayer = pos === 1 ? match.p1 : match.p2;
+                if (!selectedPlayer || selectedPlayer.isEmpty) return;
+
+                if (!current.winners) current.winners = {};
+                if (current.winners[match.id] === pos) {
+                  delete current.winners[match.id];
+                } else {
+                  current.winners[match.id] = pos;
+                }
+                saveToFirebase();
+                renderBracket();
+              });
+            });
+          }
+
+          roundCol.appendChild(matchWrapper);
+        });
+
+        bracketContent.appendChild(roundCol);
+      });
+
+      // Cột Nhà Vô Địch
+      const champCol = document.createElement('div');
+      champCol.className = 'flex flex-col justify-around w-64 xl:w-72 relative shrink-0';
+      
+      const champName = champion && !champion.isEmpty ? (champion.name || `VĐV Số ${champion.seed}`) : "???";
+      const champUnit = champion && !champion.isEmpty && champion.unit ? champion.unit : "Chờ kết quả Chung Kết";
+
+      champCol.innerHTML = `
+        <div class="round-badge absolute -top-9 left-0 right-0 h-8 flex items-center justify-center text-center text-xs font-black text-yellow-800 uppercase tracking-widest bg-yellow-300 border border-yellow-400 rounded-lg shadow-xs leading-none">
+          <span class="inline-block leading-none">🏆 Nhà Vô Địch</span>
+        </div>
+        <div class="relative flex-1 flex flex-col justify-center py-2">
+          <div class="bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-100 rounded-2xl shadow-lg border-2 border-yellow-400 p-5 text-center z-10 relative">
+            <h3 class="text-[10px] font-black text-yellow-700 uppercase tracking-widest mb-1">Huy Chương Vàng</h3>
+            <div class="text-lg xl:text-xl font-black text-slate-800 break-words leading-snug mt-1">
+              ${escapeHtml(champName)}
+            </div>
+            <div class="text-xs font-bold text-amber-800 mt-2 border-t border-yellow-300/60 pt-2 break-words leading-snug">
+              ${escapeHtml(champUnit)}
+            </div>
+          </div>
+        </div>
+      `;
+
+      bracketContent.appendChild(champCol);
+    }
+
+    // ================= BẢNG TỔNG HỢP KẾT QUẢ TOÀN ĐOÀN =================
+    document.getElementById('toggleSummaryViewBtn').addEventListener('click', () => {
+      isSummaryView = !isSummaryView;
+      syncUIFromActiveCategory();
+    });
+
+    document.getElementById('backToBracketBtn').addEventListener('click', () => {
+      isSummaryView = false;
+      syncUIFromActiveCategory();
+    });
+
+    function computeFullTournamentSummary() {
+      const unitsMap = {}; // { unitName: { unit, gold: 0, silver: 0, bronze: 0, details: [] } }
+      const categoryResults = [];
+
+      // Quét toàn bộ các đơn vị có tham gia trong giải để hiển thị đầy đủ kể cả đơn vị chưa có huy chương
+      categories.forEach(cat => {
+        (cat.participants || []).forEach(p => {
+          const u = (p.unit || "").trim();
+          if (u && !unitsMap[u]) {
+            unitsMap[u] = { unit: u, gold: 0, silver: 0, bronze: 0, details: [] };
+          }
+        });
+      });
+
+      function addMedalToUnit(player, medalType, catTitle) {
+        if (!player || player.isEmpty) return;
+        const u = (player.unit || "Chưa rõ đơn vị").trim();
+        const pName = (player.name || `VĐV Số ${player.seed}`).trim();
+        if (!unitsMap[u]) {
+          unitsMap[u] = { unit: u, gold: 0, silver: 0, bronze: 0, details: [] };
+        }
+        if (medalType === 'GOLD') {
+          unitsMap[u].gold++;
+          unitsMap[u].details.push(`🥇 ${catTitle} (${pName})`);
+        } else if (medalType === 'SILVER') {
+          unitsMap[u].silver++;
+          unitsMap[u].details.push(`🥈 ${catTitle} (${pName})`);
+        } else if (medalType === 'BRONZE') {
+          unitsMap[u].bronze++;
+          unitsMap[u].details.push(`🥉 ${catTitle} (${pName})`);
+        }
+      }
+
+      let completedCount = 0;
+
+      categories.forEach((cat, idx) => {
+        const { gold, silver, bronzes } = calculateCategoryBracket(cat);
+        if (gold || silver || bronzes.length > 0) completedCount++;
+
+        addMedalToUnit(gold, 'GOLD', cat.title);
+        addMedalToUnit(silver, 'SILVER', cat.title);
+        bronzes.forEach(b => addMedalToUnit(b, 'BRONZE', cat.title));
+
+        categoryResults.push({
+          stt: idx + 1,
+          title: cat.title || `Hạng cân ${idx + 1}`,
+          court: cat.court || "Sân 1",
+          gold: gold && !gold.isEmpty ? `${gold.name || 'VĐV'} (${gold.unit || '---'})` : "---",
+          silver: silver && !silver.isEmpty ? `${silver.name || 'VĐV'} (${silver.unit || '---'})` : "---",
+          bronzes: bronzes.length > 0
+            ? bronzes.map(b => `${b.name || 'VĐV'} (${b.unit || '---'})`).join(" & ")
+            : "---"
+        });
+      });
+
+      const standings = Object.values(unitsMap).sort((a, b) => {
+        if (b.gold !== a.gold) return b.gold - a.gold;
+        if (b.silver !== a.silver) return b.silver - a.silver;
+        if (b.bronze !== a.bronze) return b.bronze - a.bronze;
+        return a.unit.localeCompare(b.unit, 'vi');
+      });
+
+      return { standings, categoryResults, completedCount };
+    }
+
+    function renderSummaryView() {
+      const { standings, categoryResults, completedCount } = computeFullTournamentSummary();
+      const firstCat = categories[0];
+      document.getElementById('summaryTournamentTitle').textContent = 
+        `Tổng Hợp Toàn Đoàn - ${firstCat?.tournamentName || 'Giải Taekwondo CLB Vĩ Hồ'}`;
+      document.getElementById('totalCompletedCategoriesBadge').textContent = 
+        `${completedCount} / ${categories.length} nội dung đã có huy chương`;
+
+      const teamBody = document.getElementById('teamStandingsTableBody');
+      if (standings.length === 0) {
+        teamBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-400 font-semibold">
+              Chưa có dữ liệu đơn vị tham gia. Hãy nhập danh sách VĐV và chấm kết quả trên sơ đồ.
+            </td>
+          </tr>
+        `;
+      } else {
+        teamBody.innerHTML = standings.map((item, idx) => {
+          const total = item.gold + item.silver + item.bronze;
+          const rankBadge = idx === 0 ? '🏆 1' : (idx === 1 ? '🥈 2' : (idx === 2 ? '🥉 3' : idx + 1));
+          return `
+            <tr class="hover:bg-slate-50 transition-colors">
+              <td class="py-3 px-4 font-black text-center text-slate-700">${rankBadge}</td>
+              <td class="py-3 px-4 font-black text-slate-900">${escapeHtml(item.unit)}</td>
+              <td class="py-3 px-4 text-xs text-slate-600 leading-relaxed">
+                ${item.details.length > 0 ? item.details.map(d => `<span class="inline-block bg-slate-100 border border-slate-200 rounded px-2 py-0.5 mr-1 mb-1 font-medium">${escapeHtml(d)}</span>`).join('') : '<span class="text-slate-400 italic">Chưa có huy chương</span>'}
+              </td>
+              <td class="py-3 px-4 text-center font-black text-base bg-yellow-50/70 text-yellow-700">${item.gold}</td>
+              <td class="py-3 px-4 text-center font-black text-base bg-slate-100/70 text-slate-700">${item.silver}</td>
+              <td class="py-3 px-4 text-center font-black text-base bg-orange-50/70 text-orange-700">${item.bronze}</td>
+              <td class="py-3 px-4 text-center font-black text-base text-blue-600">${total}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const catBody = document.getElementById('categoryMedalsTableBody');
+      catBody.innerHTML = categoryResults.map(cr => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-3 px-4 text-center font-bold text-slate-500">${cr.stt}</td>
+          <td class="py-3 px-4 font-black text-slate-800">${escapeHtml(cr.title)}</td>
+          <td class="py-3 px-4 text-center">
+            <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold text-xs">${escapeHtml(cr.court)}</span>
+          </td>
+          <td class="py-3 px-4 font-bold text-yellow-800 bg-yellow-50/40">${escapeHtml(cr.gold)}</td>
+          <td class="py-3 px-4 font-bold text-slate-700 bg-slate-50">${escapeHtml(cr.silver)}</td>
+          <td class="py-3 px-4 font-bold text-orange-800 bg-orange-50/40">${escapeHtml(cr.bronzes)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Xuất file Excel Tổng Hợp Toàn Đoàn (.xlsx)
+    document.getElementById('exportSummaryExcelBtn').addEventListener('click', () => {
+      if (typeof XLSX === 'undefined') {
+        showToast('Thư viện Excel đang tải, vui lòng thử lại!', 'error');
+        return;
+      }
+      const { standings, categoryResults } = computeFullTournamentSummary();
+
+      const sheet1Data = standings.map((s, idx) => ({
+        "Hạng": idx + 1,
+        "Đơn Vị Tham Gia": s.unit,
+        "Nội Dung Thi Đấu Đạt Giải": s.details.join(" | "),
+        "Huy Chương Vàng": s.gold,
+        "Huy Chương Bạc": s.silver,
+        "Huy Chương Đồng": s.bronze,
+        "Tổng Số Huy Chương": s.gold + s.silver + s.bronze
+      }));
+
+      const sheet2Data = categoryResults.map(c => ({
+        "STT": c.stt,
+        "Nội Dung Thi Đấu": c.title,
+        "Sân Thi Đấu": c.court,
+        "Huy Chương Vàng": c.gold,
+        "Huy Chương Bạc": c.silver,
+        "Đồng Huy Chương Đồng": c.bronzes
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws1 = XLSX.utils.json_to_sheet(sheet1Data);
+      const ws2 = XLSX.utils.json_to_sheet(sheet2Data);
+      ws1['!cols'] = [{ wch: 8 }, { wch: 25 }, { wch: 50 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 18 }];
+      ws2['!cols'] = [{ wch: 6 }, { wch: 28 }, { wch: 12 }, { wch: 30 }, { wch: 30 }, { wch: 45 }];
+
+      XLSX.utils.book_append_sheet(wb, ws1, "XepHangToanDoan");
+      XLSX.utils.book_append_sheet(wb, ws2, "KetQuaTungNoiDung");
+      XLSX.writeFile(wb, "Tong_Hop_Ket_Qua_Toan_Doan.xlsx");
+      showToast('Đã tải xuống file Excel Tổng Hợp Toàn Đoàn!');
+    });
+
+    // ================= CÁC CHỨC NĂNG BỐC THĂM, LOGO, EXCEL, XUẤT ẢNH =================
+    sizeSelect.addEventListener('change', (e) => {
+      const current = getActiveCategory();
+      if (!canEditCategory(current)) return;
+      const newSize = parseInt(e.target.value, 10);
+      current.size = newSize;
+      current.isBracketVisible = false;
+      current.winners = {};
+      current.matchNumbers = {};
+
+      const oldParticipants = [...current.participants];
+      current.participants = Array.from({ length: newSize }, (_, i) => ({
+        id: i,
+        name: oldParticipants[i]?.name || "",
+        unit: oldParticipants[i]?.unit || "",
+        seed: ""
+      }));
+
+      saveToFirebase();
+      renderCategoryTabs();
+      renderParticipantsList();
+      renderBracket();
+    });
+
+    drawBtn.addEventListener('click', () => {
+      const current = getActiveCategory();
+      if (!canEditCategory(current)) return;
+      const numbers = Array.from({ length: current.size }, (_, i) => i + 1);
+      
+      for (let i = numbers.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+      }
+
+      current.participants.forEach((p, idx) => {
+        p.seed = numbers[idx];
+      });
+
+      current.winners = {};
+      current.isBracketVisible = true;
+
+      saveToFirebase();
+      renderCategoryTabs();
+      renderParticipantsList();
+      renderBracket();
+      showToast(`Đã bốc thăm ngẫu nhiên cho "${current.title}"!`);
+    });
+
+    fillSampleBtn.addEventListener('click', () => {
+      const current = getActiveCategory();
+      if (!canEditCategory(current)) return;
+      const sampleNames = ["Nguyễn Văn A", "Trần Quốc Bảo", "Lê Hoàng Cường", "Phạm Minh Đức", "Hoàng Tuấn Kiệt", "Vũ Gia Huy", "Đặng Khoa", "Bùi Nhật Minh"];
+      const sampleUnits = ["CLB Vĩ Hồ", "Quận 1", "Quận 7", "Thủ Đức", "CLB Vĩ Hồ", "Bình Thạnh", "Gò Vấp", "Tân Bình"];
+      
+      current.participants.forEach((p, idx) => {
+        p.name = sampleNames[idx % sampleNames.length] + (idx >= 8 ? ` (${idx + 1})` : '');
+        p.unit = sampleUnits[idx % sampleUnits.length];
+      });
+
+      saveToFirebase();
+      renderParticipantsList();
+      if (current.isBracketVisible) renderBracket();
+      showToast('Đã điền danh sách VĐV mẫu!');
+    });
+
+    function applyLogoToUI(dataUrl) {
+      const customLogoImg = document.getElementById('customLogoImg');
+      const bracketLogoImg = document.getElementById('bracketLogoImg');
+      const defaultLogoSvg = document.getElementById('defaultLogoSvg');
+      if (dataUrl) {
+        customLogoImg.src = dataUrl;
+        customLogoImg.classList.remove('hidden');
+        defaultLogoSvg.classList.add('hidden');
+        bracketLogoImg.src = dataUrl;
+        bracketLogoImg.classList.remove('hidden');
+      }
+    }
+
+    document.getElementById('logoContainer').addEventListener('click', () => {
+      if (currentRole === 'viewer') return;
+      document.getElementById('logoInput').click();
+    });
+
+    document.getElementById('logoInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        customLogoDataUrl = event.target.result;
+        applyLogoToUI(customLogoDataUrl);
+        saveToFirebase();
+        showToast('Đã cập nhật Logo giải đấu!');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Nhập file Excel danh sách VĐV
+    const excelModal = document.getElementById('excelModal');
+    const excelFileInput = document.getElementById('excelFileInput');
+
+    document.getElementById('openExcelModalBtn').addEventListener('click', () => excelModal.classList.remove('hidden'));
+    document.getElementById('closeExcelModalBtn').addEventListener('click', () => excelModal.classList.add('hidden'));
+    document.getElementById('triggerUploadExcelBtn').addEventListener('click', () => excelFileInput.click());
+
+    document.getElementById('downloadTemplateBtn').addEventListener('click', () => {
+      const sampleData = [
+        { "STT": 1, "Tên VĐV": "Nguyễn Văn A", "Đơn vị": "CLB Vĩ Hồ", "Số thăm": "" },
+        { "STT": 2, "Tên VĐV": "Trần Quốc Bảo", "Đơn vị": "Quận 1", "Số thăm": "" },
+        { "STT": 3, "Tên VĐV": "Lê Hoàng Cường", "Đơn vị": "Quận 7", "Số thăm": "" },
+        { "STT": 4, "Tên VĐV": "Phạm Minh Đức", "Đơn vị": "Thủ Đức", "Số thăm": "" }
+      ];
+      const ws = XLSX.utils.json_to_sheet(sampleData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "DanhSachVDV");
+      XLSX.writeFile(wb, "File_Mau_Boc_Tham_VDV.xlsx");
+    });
+
+    excelFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const current = getActiveCategory();
+          if (!canEditCategory(current)) return;
+          const data = new Uint8Array(event.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+          if (rows.length <= 1) {
+            showToast('File Excel trống!', 'error');
+            return;
+          }
+
+          const headerRow = rows[0].map(cell => String(cell).trim().toLowerCase());
+          let nameCol = headerRow.findIndex(h => h.includes('tên') || h.includes('ten') || h.includes('vđv') || h.includes('vdv'));
+          let unitCol = headerRow.findIndex(h => h.includes('đơn vị') || h.includes('don vi') || h.includes('clb') || h.includes('đoàn'));
+          let seedCol = headerRow.findIndex(h => h.includes('thăm') || h.includes('tham') || h.includes('seed'));
+
+          if (nameCol === -1) nameCol = headerRow.length >= 2 ? 1 : 0;
+          if (unitCol === -1) unitCol = nameCol + 1;
+
+          const importedList = [];
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+            const nameVal = String(row[nameCol] || "").trim();
+            const unitVal = unitCol < row.length ? String(row[unitCol] || "").trim() : "";
+            const seedRaw = (seedCol !== -1 && seedCol < row.length) ? String(row[seedCol] || "").trim() : "";
+            const seedVal = seedRaw !== "" && !isNaN(seedRaw) ? parseInt(seedRaw, 10) : "";
+
+            if (nameVal || unitVal) {
+              importedList.push({ name: nameVal, unit: unitVal, seed: seedVal });
+            }
+          }
+
+          const validSizes = [4, 8, 16, 32, 64, 128];
+          let targetSize = validSizes.find(s => s >= importedList.length) || 128;
+          current.size = targetSize;
+          sizeSelect.value = String(current.size);
+
+          let hasAnySeed = false;
+          current.participants = Array.from({ length: current.size }, (_, i) => {
+            const item = importedList[i];
+            if (item && item.seed) hasAnySeed = true;
+            return {
+              id: i,
+              name: item ? item.name : "",
+              unit: item ? item.unit : "",
+              seed: item && item.seed ? item.seed : ""
+            };
+          });
+
+          current.winners = {};
+          if (hasAnySeed) current.isBracketVisible = true;
+
+          saveToFirebase();
+          renderCategoryTabs();
+          renderParticipantsList();
+          renderBracket();
+          excelModal.classList.add('hidden');
+          excelFileInput.value = "";
+          showToast(`Đã nhập ${importedList.length} VĐV vào "${current.title}"!`);
+        } catch (err) {
+          showToast('Lỗi đọc file Excel!', 'error');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Lưu ảnh sơ đồ sắc nét
+    const saveImageBtn = document.getElementById('saveImageBtn');
+    const saveImageBtnText = document.getElementById('saveImageBtnText');
+
+    saveImageBtn.addEventListener('click', async () => {
+      const current = getActiveCategory();
+      const originalText = saveImageBtnText.textContent;
+      saveImageBtnText.textContent = "Đang xuất ảnh...";
+      saveImageBtn.disabled = true;
+
+      try {
+        const cloneWrapper = document.createElement('div');
+        cloneWrapper.style.position = 'fixed';
+        cloneWrapper.style.top = '0';
+        cloneWrapper.style.left = '-99999px';
+        cloneWrapper.style.zIndex = '-9999';
+        cloneWrapper.style.backgroundColor = '#f8fafc';
+        cloneWrapper.style.padding = '48px';
+        cloneWrapper.style.width = 'max-content';
+        cloneWrapper.style.height = 'max-content';
+
+        const cloneArea = exportArea.cloneNode(true);
+        const clonedInput = cloneArea.querySelector('#tournamentNameInput');
+        if (clonedInput) {
+          const titleDiv = document.createElement('div');
+          titleDiv.className = 'text-2xl md:text-3xl font-black text-slate-800 uppercase tracking-tight py-1';
+          titleDiv.textContent = current.tournamentName || 'SƠ ĐỒ THI ĐẤU';
+          clonedInput.parentNode.replaceChild(titleDiv, clonedInput);
+        }
+
+        cloneArea.querySelectorAll('.round-badge, .seed-badge, .match-no-badge, #bracketCourtBadge').forEach(badge => {
+          badge.style.display = 'inline-flex';
+          badge.style.alignItems = 'center';
+          badge.style.justifyContent = 'center';
+          badge.style.lineHeight = '1';
+          badge.style.paddingBottom = '2px';
+        });
+
+        cloneWrapper.appendChild(cloneArea);
+        document.body.appendChild(cloneWrapper);
+
+        await new Promise(r => setTimeout(r, 200));
+
+        const canvas = await html2canvas(cloneWrapper, {
+          scale: current.size >= 64 ? 2 : 3,
+          backgroundColor: '#f8fafc',
+          useCORS: true,
+          logging: false
+        });
+
+        document.body.removeChild(cloneWrapper);
+
+        const imageLink = document.createElement('a');
+        imageLink.download = `SoDo_${current.title}_${current.court}.png`;
+        imageLink.href = canvas.toDataURL('image/png', 1.0);
+        imageLink.click();
+        showToast('Đã lưu ảnh sơ đồ rõ nét!');
+      } catch (error) {
+        showToast('Có lỗi khi tạo ảnh!', 'error');
+      } finally {
+        saveImageBtnText.textContent = originalText;
+        saveImageBtn.disabled = false;
+      }
+    });
+
+    document.getElementById('printBracketBtn').addEventListener('click', () => window.print());
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Khởi chạy ứng dụng & kết nối Firebase
+    syncUIFromActiveCategory();
+    initFirebaseListeners();
+  </script>
+</body>
+</html>
