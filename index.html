@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sơ Đồ Bốc Thăm & Kết Quả Thi Đấu - CLB Vĩ Hồ | Bản nâng cấp tìm kiếm & ảnh dùng chung</title>
+  <title>Sơ Đồ Bốc Thăm & Kết Quả Thi Đấu - CLB Vĩ Hồ</title>
   <!-- Tải Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Thư viện đọc/xuất Excel (SheetJS) -->
@@ -530,7 +530,7 @@
         <div>
           <label class="block text-xs font-bold text-slate-300 uppercase mb-1.5">1. Chọn Vai Trò Của Bạn</label>
           <select id="loginRoleSelect" class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 font-bold text-sm focus:outline-none focus:border-blue-500 cursor-pointer">
-            <option value="viewer">👁️ VĐV & Phụ Huynh (Chỉ xem kết quả - Không tốn kết nối)</option>
+            <option value="viewer">👁️ HLV - VĐV - Phụ Huynh</option>
             <option value="Sân 1">📝 Thư ký Sân 1 (Chỉ quản lý Sân 1)</option>
             <option value="Sân 2">📝 Thư ký Sân 2 (Chỉ quản lý Sân 2)</option>
             <option value="Sân 3">📝 Thư ký Sân 3 (Chỉ quản lý Sân 3)</option>
@@ -545,8 +545,7 @@
           <label class="block text-xs font-bold text-slate-300 uppercase mb-1.5">2. Nhập Mã PIN Cấp Quyền</label>
           <input id="loginPinInput" type="password" placeholder="Nhập mã PIN..." class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3.5 py-2.5 font-bold text-sm focus:outline-none focus:border-amber-500" />
           <p class="text-[11px] text-slate-400 mt-1.5">
-            * Mặc định: Admin (<strong class="text-amber-400">9999</strong>) | Sân 1→6 (<strong class="text-amber-400">1111 → 6666</strong>).
-          </p>
+                  </p>
         </div>
 
         <div class="flex justify-end gap-2 pt-2">
@@ -1685,7 +1684,7 @@
         firebase.database().goOffline();
 
         dot.className = "w-2 h-2 rounded-full bg-sky-400";
-        text.textContent = "REST API • tự kiểm tra khoảng 20 giây";
+        text.textContent = "REST API";
 
         viewerFailureCount = 0;
         syncViaRestApi(showNotification).finally(() => scheduleViewerPoll());
@@ -2023,7 +2022,7 @@
         publicCourtFilter.disabled = true;
       } else {
         roleBadge.className = "px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700";
-        roleBadge.textContent = "👁️ Chế độ Xem (VĐV & Phụ huynh)";
+        roleBadge.textContent = "HLV - VĐV - Phụ huynh";
         authBtnText.textContent = "Đăng nhập";
         openPinSettingBtn.classList.add('hidden');
         openPinSettingBtn.classList.remove('flex');
@@ -2931,6 +2930,37 @@
     }
 
     // ================= TÍNH TOÁN SƠ ĐỒ & LỊCH SỬ TRẬN THẮNG VÒNG TRƯỚC =================
+    // Một ô chỉ được xem là có VĐV/đội khi có tên cá nhân hoặc ít nhất một tên thành viên.
+    function isRealDrawParticipant(participant) {
+      if (!participant) return false;
+      const directName = String(participant.name || "").trim();
+      const memberHasName = Array.isArray(participant.members) && participant.members.some(member =>
+        String(member?.name || "").trim() !== ""
+      );
+      return directName !== "" || memberHasName;
+    }
+
+    // Chọn các nhánh cách đều nhau; xoay ngẫu nhiên để vị trí BYE/trận thật không cố định qua mỗi lần bốc.
+    function getEvenlySpacedBracketIndices(total, count) {
+      const safeTotal = Math.max(0, Number(total) || 0);
+      const safeCount = Math.max(0, Math.min(safeTotal, Number(count) || 0));
+      if (!safeTotal || !safeCount) return [];
+
+      const base = Array.from({ length: safeCount }, (_, i) =>
+        Math.floor(((i + 0.5) * safeTotal) / safeCount)
+      );
+      const rotation = Math.floor(Math.random() * safeTotal);
+      return [...new Set(base.map(index => (index + rotation) % safeTotal))];
+    }
+
+    function shuffleArrayInPlace(items) {
+      for (let i = items.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [items[i], items[j]] = [items[j], items[i]];
+      }
+      return items;
+    }
+
     function calculateCategoryBracket(cat) {
       const { size, participants, winners = {}, matchScores = {} } = cat;
       const generatedRounds = [];
@@ -2942,15 +2972,18 @@
 
         for (let m = 0; m < numMatches; m++) {
           let p1 = null, p2 = null;
+          let sourceMatch1 = null, sourceMatch2 = null;
 
           if (r === 0) {
             const seed1 = m * 2 + 1;
             const seed2 = m * 2 + 2;
-            p1 = participants.find(p => Number(p.seed) === seed1) || { name: "", unit: "", seed: seed1, isEmpty: true };
-            p2 = participants.find(p => Number(p.seed) === seed2) || { name: "", unit: "", seed: seed2, isEmpty: true };
+            p1 = participants.find(p => Number(p.seed) === seed1 && isRealDrawParticipant(p)) || { name: "", unit: "", seed: seed1, isEmpty: true };
+            p2 = participants.find(p => Number(p.seed) === seed2 && isRealDrawParticipant(p)) || { name: "", unit: "", seed: seed2, isEmpty: true };
           } else {
             const prevM1 = generatedRounds[r - 1][m * 2];
             const prevM2 = generatedRounds[r - 1][m * 2 + 1];
+            sourceMatch1 = prevM1;
+            sourceMatch2 = prevM2;
             p1 = prevM1.winnerPos === 1 ? prevM1.p1 : (prevM1.winnerPos === 2 ? prevM1.p2 : null);
             p2 = prevM2.winnerPos === 1 ? prevM2.p1 : (prevM2.winnerPos === 2 ? prevM2.p2 : null);
           }
@@ -2958,8 +2991,17 @@
           const matchId = `r${r}-m${m}`;
           const scoreObj = matchScores[matchId] || null;
           const evalScore = evaluateBestOf3(scoreObj);
+          const hasP1 = isRealDrawParticipant(p1);
+          const hasP2 = isRealDrawParticipant(p2);
+          // Ở vòng sau, một nhánh chỉ được coi là trống khi trận nguồn thực sự không có VĐV.
+          // Trận nguồn có đủ 2 VĐV nhưng chưa có kết quả là trạng thái CHỜ, không phải BYE.
+          const branch1ResolvedEmpty = r === 0 ? !hasP1 : !sourceMatch1?.hasAnyEntrant;
+          const branch2ResolvedEmpty = r === 0 ? !hasP2 : !sourceMatch2?.hasAnyEntrant;
+          const isBye = (hasP1 && branch2ResolvedEmpty) || (hasP2 && branch1ResolvedEmpty);
+          const byeWinnerPos = isBye ? (hasP1 ? 1 : 2) : null;
 
-          let winnerPos = evalScore.autoWinnerPos || winners[matchId];
+          // BYE được xử lý tự động, không cần thư ký nhập tỉ số hoặc bấm chọn người thắng.
+          let winnerPos = byeWinnerPos || evalScore.autoWinnerPos || winners[matchId] || null;
 
           roundMatches.push({
             id: matchId,
@@ -2968,6 +3010,8 @@
             p1,
             p2,
             winnerPos,
+            isBye,
+            hasAnyEntrant: hasP1 || hasP2,
             scoreObj,
             evalScore
           });
@@ -3533,7 +3577,7 @@
           matchWrapper.innerHTML = `
             <div class="match-card-box bg-white rounded-xl shadow-sm hover:shadow-md hover:border-blue-400 border border-slate-200 relative z-10 cursor-pointer transition-all">
               <div class="bg-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-500 flex items-center justify-between uppercase border-b border-slate-200 rounded-t-xl">
-                <span>Nhánh ${mIndex + 1} • Xem chi tiết</span>
+                <span>${match.isBye ? 'MIỄN ĐẤU (BYE) • TỰ ĐỘNG VÀO VÒNG SAU' : `Nhánh ${mIndex + 1} • Xem chi tiết`}</span>
                 <div class="flex items-center gap-1.5">
                   ${roundsRatio ? `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-white font-black text-[10px]">${roundsRatio}</span>` : ''}
                   ${scheduledMatchNo ? `<span class="match-no-badge inline-flex items-center justify-center px-2 h-5 rounded bg-amber-500 text-slate-950 font-black text-[11px]">TRẬN ${scheduledMatchNo}</span>` : ''}
@@ -3577,6 +3621,16 @@
           `;
 
           matchWrapper.querySelector('.match-card-box').addEventListener('click', () => {
+            if (match.isBye) {
+              const byePlayer = hasP1 ? match.p1 : match.p2;
+              const byeName = byePlayer?.name || `VĐV số ${byePlayer?.seed || ''}`;
+              showToast(`${byeName} được miễn đấu vòng này và tự động vào vòng tiếp theo!`);
+              return;
+            }
+            if (!hasP1 || !hasP2) {
+              showToast('Nhánh đấu này chưa đủ VĐV để mở chi tiết trận!', 'error');
+              return;
+            }
             openMatchDetailModal(rIndex, mIndex);
           });
 
@@ -3860,15 +3914,77 @@
 
     // ================= BỐC THĂM 1 MỤC & BỐC THĂM TẤT CẢ CÁC NỘI DUNG =================
     function randomizeCategorySeeds(cat) {
-      const numbers = Array.from({ length: cat.size }, (_, i) => i + 1);
-      for (let i = numbers.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+      const size = Number(cat.size) || 8;
+      const participants = Array.isArray(cat.participants) ? cat.participants : [];
+      const entrants = shuffleArrayInPlace(participants.filter(isRealDrawParticipant));
+      const entrantCount = entrants.length;
+      const firstRoundMatchCount = size / 2;
+
+      // Xóa toàn bộ số thăm cũ, đặc biệt không gán số thăm cho các ô trống.
+      participants.forEach(participant => { participant.seed = ""; });
+
+      if (entrantCount < 2) {
+        cat.winners = {};
+        cat.matchScores = {};
+        cat.isBracketVisible = false;
+        return { entrantCount, byeCount: Math.max(0, size - entrantCount), needsSmallerSchema: false };
       }
-      cat.participants.forEach((p, idx) => { p.seed = numbers[idx]; });
+
+      let fullMatchIndices = new Set();
+      let byeMatchIndices = new Set();
+
+      if (entrantCount >= firstRoundMatchCount) {
+        // Trường hợp mục tiêu: đủ VĐV để mỗi trận vòng 1 có ít nhất một người.
+        const byeCount = size - entrantCount;
+        const fullMatchCount = entrantCount - firstRoundMatchCount;
+
+        // Phân bố đều loại nhánh ít hơn (BYE hoặc trận có 2 VĐV), phần còn lại xen kẽ theo nhánh.
+        if (byeCount <= fullMatchCount) {
+          byeMatchIndices = new Set(getEvenlySpacedBracketIndices(firstRoundMatchCount, byeCount));
+          for (let m = 0; m < firstRoundMatchCount; m++) {
+            if (!byeMatchIndices.has(m)) fullMatchIndices.add(m);
+          }
+        } else {
+          fullMatchIndices = new Set(getEvenlySpacedBracketIndices(firstRoundMatchCount, fullMatchCount));
+          for (let m = 0; m < firstRoundMatchCount; m++) {
+            if (!fullMatchIndices.has(m)) byeMatchIndices.add(m);
+          }
+        }
+      } else {
+        // Không đủ VĐV lấp mỗi cặp vòng 1: vẫn rải VĐV đều trên các nhánh có thể,
+        // nhưng cần giảm Schema xuống bậc liền kề để tránh BYE nối tiếp ở vòng sau.
+        const occupiedMatchIndices = getEvenlySpacedBracketIndices(firstRoundMatchCount, entrantCount);
+        byeMatchIndices = new Set(occupiedMatchIndices);
+      }
+
+      let entrantPointer = 0;
+      for (let matchIndex = 0; matchIndex < firstRoundMatchCount && entrantPointer < entrantCount; matchIndex++) {
+        const seedA = matchIndex * 2 + 1;
+        const seedB = seedA + 1;
+        const isFullMatch = fullMatchIndices.has(matchIndex);
+
+        if (isFullMatch && entrantPointer + 1 < entrantCount) {
+          entrants[entrantPointer++].seed = seedA;
+          entrants[entrantPointer++].seed = seedB;
+        } else if (byeMatchIndices.has(matchIndex)) {
+          // Tung ngẫu nhiên vị trí trên/dưới của người được BYE để tránh cố định màu/nhánh.
+          const assignedSeed = Math.random() < 0.5 ? seedA : seedB;
+          entrants[entrantPointer++].seed = assignedSeed;
+        }
+      }
+
       cat.winners = {};
       cat.matchScores = {};
       cat.isBracketVisible = true;
+
+      return {
+        entrantCount,
+        byeCount: Math.max(0, size - entrantCount),
+        fullMatchCount: Math.max(0, entrantCount - firstRoundMatchCount),
+        needsSmallerSchema: entrantCount < firstRoundMatchCount,
+        nextLowerSchema: size / 2,
+        recommendedSchema: Math.max(4, Math.pow(2, Math.ceil(Math.log2(Math.max(2, entrantCount)))))
+      };
     }
 
     sizeSelect.addEventListener('change', (e) => {
@@ -3899,21 +4015,39 @@
     drawBtn.addEventListener('click', () => {
       const current = getActiveCategory();
       if (!canEditCategory(current)) return;
-      randomizeCategorySeeds(current);
+      const drawInfo = randomizeCategorySeeds(current);
+      if (drawInfo.entrantCount < 2) {
+        showToast('Cần ít nhất 2 VĐV/đội có tên để bốc thăm!', 'error');
+        renderParticipantsList();
+        renderBracket();
+        return;
+      }
       saveOneCategoryToFirebase(current, true);
       renderCategoryTabs();
       renderParticipantsList();
       renderBracket();
-      showToast(`Đã bốc thăm "${current.title}"!`);
+      if (drawInfo.needsSmallerSchema) {
+        showToast(`Đã rải ${drawInfo.entrantCount} VĐV/đội trên các nhánh có thể. Schema ${current.size} quá lớn; nên chọn Schema ${drawInfo.recommendedSchema} để tránh BYE nối tiếp!`, 'error');
+      } else if (drawInfo.byeCount > 0) {
+        showToast(`Đã bốc thăm ${drawInfo.entrantCount} VĐV/đội: ${drawInfo.byeCount} suất BYE được rải đều ở vòng 1; vòng 2 có đủ ${current.size / 2} VĐV/đội để thi đấu!`);
+      } else {
+        showToast(`Đã bốc thăm "${current.title}"!`);
+      }
     });
 
     drawAllCategoriesBtn.addEventListener('click', () => {
       const editableCats = categories.filter(c => canEditCategory(c));
       if (editableCats.length === 0) return;
-      editableCats.forEach(cat => randomizeCategorySeeds(cat));
+      const drawResults = editableCats.map(cat => ({ cat, info: randomizeCategorySeeds(cat) }));
       saveAllCategoriesToFirebase();
       syncUIFromActiveCategory();
-      showToast(`Đã bốc thăm ngẫu nhiên cho toàn bộ ${editableCats.length} nội dung!`);
+      const needsSmaller = drawResults.filter(item => item.info.entrantCount >= 2 && item.info.needsSmallerSchema);
+      if (needsSmaller.length) {
+        const examples = needsSmaller.slice(0, 2).map(item => `${item.cat.title}: nên chọn Schema ${item.info.recommendedSchema}`).join('; ');
+        showToast(`Đã bốc thăm ${editableCats.length} nội dung. Lưu ý Schema quá lớn ở ${examples}${needsSmaller.length > 2 ? '; ...' : ''}.`, 'error');
+      } else {
+        showToast(`Đã bốc thăm ngẫu nhiên cho toàn bộ ${editableCats.length} nội dung; các suất BYE được phân bổ đều ở vòng đầu!`);
+      }
     });
 
     fillSampleBtn.addEventListener('click', () => {
