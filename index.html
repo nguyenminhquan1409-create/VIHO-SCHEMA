@@ -49,6 +49,148 @@
     }
 
     
+    /* Giao diện HLV/VĐV/Phụ huynh: chỉ bộ chọn nội dung chuyển lên hàng trên. */
+    #topGlobalBarLeft {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    /* Giữ ô tìm kiếm đủ rộng và đẩy nhẹ về bên phải để không bị các cụm điều khiển lấn/che. */
+    #globalAthleteSearchWrap {
+      flex: 0 0 276px;
+      width: 276px;
+      min-width: 260px;
+      margin-left: auto;
+      position: relative;
+      z-index: 70;
+    }
+    #globalAthleteSearchInput {
+      display: block;
+      width: 100%;
+      min-width: 0;
+    }
+    #categoryTabsBar.viewer-category-layout {
+      display: flex !important;
+      flex: 0 1 auto;
+      min-width: 0;
+      max-width: 360px;
+      align-items: center;
+      justify-content: flex-start;
+      column-gap: 0;
+      row-gap: 0;
+      min-height: 0;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+    }
+    #categoryTabsBar.viewer-category-layout > div:first-child {
+      /* Giữ nhãn “Nội dung:” nằm ngang cạnh hộp chọn, giống nhóm “Lọc sân:”. */
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      align-items: center !important;
+      gap: 8px !important;
+      flex: 0 1 auto;
+      width: max-content;
+      max-width: 100%;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    #categoryTabsBar.viewer-category-layout #categoryDropdownWrapper {
+      flex: 0 1 auto;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    #categoryTabsBar.viewer-category-layout #categoryDropdownBtn {
+      min-width: 260px;
+      max-width: min(360px, calc(100vw - 24px));
+    }
+    #categoryTabsBar.viewer-category-layout > div:last-child {
+      flex: 0 0 auto;
+      min-width: 0;
+    }
+    /* Hàng thứ hai: bảng tình trạng sân chạy hết chiều ngang và tự chia đều theo số sân. */
+    #courtStatusBoard.court-status-viewer-row {
+      display: block;
+      flex: 0 0 auto;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      align-self: stretch;
+      overflow-x: hidden !important;
+      overflow-y: hidden;
+      background: #1e293b !important;
+      border: 0;
+      border-bottom: 1px solid #334155;
+      padding: 7px 16px 9px;
+      margin: 0;
+    }
+    #courtStatusBoard.court-status-viewer-row > div:first-child {
+      margin-bottom: 6px;
+    }
+    #courtStatusBoard.court-status-viewer-row .court-status-title {
+      color: #ffffff !important;
+    }
+    #courtStatusBoard.court-status-viewer-row #courtStatusGrid {
+      display: grid;
+      width: 100%;
+      min-width: 0 !important;
+      gap: 8px;
+      align-items: stretch;
+    }
+    #courtStatusBoard.court-status-viewer-row .court-status-card {
+      min-width: 0;
+      padding: 5px;
+      border-radius: 8px;
+    }
+    #courtStatusBoard.court-status-viewer-row .court-match-row {
+      min-width: 0;
+      padding: 3px 5px;
+    }
+    #courtStatusBoard.court-status-viewer-row .court-match-category {
+      max-width: 100%;
+    }
+    #viewerZoomTarget {
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    #bracketExportButtonsGroup {
+      flex: 0 0 auto;
+    }
+    @media (max-width: 1100px) {
+      #topGlobalBarLeft {
+        flex-wrap: wrap;
+      }
+      #categoryTabsBar.viewer-category-layout {
+        flex: 0 1 360px;
+        max-width: 100%;
+      }
+      #globalAthleteSearchWrap {
+        flex: 0 1 276px;
+        width: 276px;
+        margin-left: auto;
+      }
+    }
+    @media (max-width: 640px) {
+      #globalAthleteSearchWrap {
+        flex: 1 1 100%;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        margin-left: 0;
+      }
+      #courtStatusBoard.court-status-viewer-row {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+      #courtStatusBoard.court-status-viewer-row #courtStatusGrid {
+        gap: 5px;
+      }
+      #courtStatusBoard.court-status-viewer-row .court-status-card {
+        padding: 4px;
+      }
+    }
+
     .athlete-search-highlight {
       outline: 4px solid #f59e0b !important;
       outline-offset: 5px !important;
@@ -66,7 +208,7 @@
         overflow: visible !important;
         background: white !important;
       }
-      #leftSidebar, #actionToolbar, #toastContainer, #categoryTabsBar, #topGlobalBar, #matchDetailModal, #athleteProfileModal, #excelModal, #authModal, #pinSettingModal, #scheduleModal {
+      #leftSidebar, #actionToolbar, #toastContainer, #categoryTabsBar, #courtStatusBoard, #topGlobalBar, #matchDetailModal, #athleteProfileModal, #excelModal, #authModal, #pinSettingModal, #scheduleModal, #scoreboardLinksModal, #viewerZoomTarget {
         display: none !important;
       }
       #rightArea, #bracketWrapper, #bracketViewport, #exportArea, #summaryWrapper {
@@ -101,7 +243,7 @@
 
   <!-- ================= THANH TRẠNG THÁI & PHÂN QUYỀN (TOP BAR) ================= -->
   <div id="topGlobalBar" class="bg-slate-950 text-white px-4 py-2 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0 z-50">
-    <div class="flex items-center gap-2 flex-wrap">
+    <div id="topGlobalBarLeft" class="flex items-center gap-2 flex-wrap min-w-0">
       <div class="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800" title="Chế độ Xem dùng REST API giúp không tốn giới hạn 100 kết nối của Firebase">
         <span id="firebaseStatusDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
         <span id="firebaseStatusText" class="text-slate-300">Đang khởi tạo đồng bộ...</span>
@@ -678,6 +820,30 @@
     <!-- PHẢI: SƠ ĐỒ THI ĐẤU HOẶC BẢNG TỔNG HỢP TOÀN ĐOÀN -->
     <div id="rightArea" class="flex-1 h-full relative overflow-hidden flex flex-col bg-slate-50">
       
+      <!-- MODAL KẾT NỐI BẢNG ĐIỂM THEO TỪNG SÂN -->
+      <div id="scoreboardLinksModal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[95] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 text-white shadow-2xl my-auto">
+          <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3">
+            <div>
+              <h3 class="text-base sm:text-lg font-black uppercase tracking-wider text-emerald-400">🔗 Kết Nối Bảng Điểm Theo Sân</h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">Điền Link Firebase (databaseURL) của từng Bảng điểm tương ứng với mỗi Sân</p>
+            </div>
+            <button id="closeScoreboardLinksBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer text-lg font-bold">✕</button>
+          </div>
+
+          <div id="scoreboardLinksForm" class="space-y-2.5 max-h-96 overflow-y-auto custom-scrollbar pr-1"></div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2.5 pt-4 mt-4 border-t border-slate-800">
+            <button id="pushAllCourtsNowBtn" type="button" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs rounded-xl border border-slate-700 cursor-pointer">
+              📤 Đẩy Lịch Trận Xuống Các Sân Ngay
+            </button>
+            <button id="saveScoreboardLinksBtn" type="button" class="py-2.5 px-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs sm:text-sm uppercase rounded-xl shadow-lg cursor-pointer">
+              LƯU KẾT NỐI BẢNG ĐIỂM
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- MODAL XẾP LỊCH & ĐÁNH SỐ TRẬN THEO SÂN -->
       <div id="scheduleModal" class="hidden fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[90] flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 text-white shadow-2xl">
@@ -729,6 +895,7 @@
       </div>
 
       <!-- ================= THANH CHỌN NỘI DUNG DẠNG CỬA SỔ XỔ DỌC ================= -->
+      <div id="categoryTabsRestorePoint" class="hidden" aria-hidden="true"></div>
       <div id="categoryTabsBar" class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0 z-40 relative">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-xs font-black text-slate-300 uppercase tracking-wider shrink-0">Nội dung:</span>
@@ -766,10 +933,30 @@
           </button>
         </div>
 
-        <button id="openScheduleModalBtn" class="hidden py-1.5 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
-          Xếp Lịch & Đánh Số Trận
-        </button>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="openScoreboardLinksBtn" type="button" class="hidden py-1.5 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
+            🔗 Kết Nối Bảng Điểm
+          </button>
+          <button id="openScheduleModalBtn" class="hidden py-1.5 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
+            Xếp Lịch & Đánh Số Trận
+          </button>
+        </div>
       </div>
+
+      <!-- BẢNG ĐIỀU HÀNH CÁC SÂN: HIỂN THỊ CHUNG CHO THƯ KÝ VÀ NGƯỜI XEM -->
+      <section id="courtStatusBoard" class="shrink-0 bg-slate-100 border-b border-slate-200 px-3 sm:px-4 py-2 overflow-x-auto custom-scrollbar">
+        <div class="flex items-center justify-between gap-2 mb-1.5 min-w-0">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-[11px] sm:text-xs font-black uppercase tracking-wider text-slate-800 whitespace-nowrap court-status-title">🥋 Tình trạng sân</span>
+          </div>
+          <span class="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 whitespace-nowrap shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ĐANG CẬP NHẬT
+          </span>
+        </div>
+        <div id="courtStatusGrid" class="grid gap-1.5 w-full" style="grid-template-columns: repeat(1, minmax(0, 1fr));">
+          <!-- Các sân được render tự động theo số sân đang sử dụng -->
+        </div>
+      </section>
 
       <!-- MÀN HÌNH 1: CHƯA BỐC THĂM -->
       <div id="emptyState" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
@@ -807,7 +994,8 @@
             </div>
 
             <!-- Cụm điều khiển Thu Phóng (Zoom To - Nhỏ) -->
-            <div class="flex items-center gap-1 bg-white border border-slate-300 rounded-xl px-2 py-1 shadow-xs">
+            <div id="toolbarZoomSlot" class="flex items-center">
+            <div id="zoomControlsGroup" class="flex items-center gap-1 bg-white border border-slate-300 rounded-xl px-2 py-1 shadow-xs">
               <span class="text-[11px] font-bold text-slate-500 uppercase mr-1 hidden sm:inline">Thu phóng:</span>
               <button id="zoomOutBtn" type="button" title="Thu nhỏ sơ đồ" class="w-7 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-sm flex items-center justify-center cursor-pointer">−</button>
               <button id="zoomResetBtn" type="button" title="Nhấp để về 100%" class="px-2 h-6 rounded-lg hover:bg-slate-100 text-xs font-black text-blue-700 min-w-[48px] text-center cursor-pointer">100%</button>
@@ -816,15 +1004,15 @@
                 Vừa khung
               </button>
             </div>
+            </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
+          <div id="toolbarExportSlot" class="flex flex-wrap items-center gap-2">
+            <div id="bracketExportButtonsGroup" class="flex flex-wrap items-center gap-2">
             <button id="saveImageBtn" class="py-1.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer">
               <span id="saveImageBtnText">Lưu Ảnh Rõ Nét</span>
             </button>
-            <button id="printBracketBtn" class="py-1.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer">
-              In Sơ Đồ
-            </button>
+</div>
           </div>
         </div>
 
@@ -855,6 +1043,7 @@
                   <div id="bracketCourtBadge" class="inline-flex items-center justify-center px-2.5 h-6 rounded-lg bg-amber-500 text-slate-950 font-black text-[11px] uppercase tracking-wider shadow-xs">
                     SÂN THI ĐẤU: SÂN 1
                   </div>
+                  <div id="viewerZoomTarget" class="hidden items-center"></div>
                 </div>
               </div>
             </div>
@@ -1829,6 +2018,7 @@
     const addCategoryBtn = document.getElementById('addCategoryBtn');
     const deleteOrResetActiveCatBtn = document.getElementById('deleteOrResetActiveCatBtn');
     const openScheduleModalBtn = document.getElementById('openScheduleModalBtn');
+    const openScoreboardLinksBtn = document.getElementById('openScoreboardLinksBtn');
 
     const categoryDropdownWrapper = document.getElementById('categoryDropdownWrapper');
     const categoryDropdownBtn = document.getElementById('categoryDropdownBtn');
@@ -1996,6 +2186,55 @@
       }, 3400);
     }
 
+    function updateViewerControlLayout() {
+      const isViewer = currentRole === 'viewer';
+      const current = getActiveCategory();
+      const hasBracket = Boolean(current && current.isBracketVisible && !isSummaryView);
+      const actionToolbar = document.getElementById('actionToolbar');
+      const zoomControls = document.getElementById('zoomControlsGroup');
+      const bracketExportButtons = document.getElementById('bracketExportButtonsGroup');
+      const viewerZoomTarget = document.getElementById('viewerZoomTarget');
+      const toolbarZoomSlot = document.getElementById('toolbarZoomSlot');
+      const toolbarExportSlot = document.getElementById('toolbarExportSlot');
+      const courtStatusBoard = document.getElementById('courtStatusBoard');
+      const categoryTabsBar = document.getElementById('categoryTabsBar');
+      const categoryTabsRestorePoint = document.getElementById('categoryTabsRestorePoint');
+      const topGlobalBar = document.getElementById('topGlobalBar');
+      const topGlobalBarLeft = document.getElementById('topGlobalBarLeft');
+      const globalAthleteSearchWrap = document.getElementById('globalAthleteSearchWrap');
+
+      if (!zoomControls || !bracketExportButtons || !viewerZoomTarget || !toolbarZoomSlot || !toolbarExportSlot || !courtStatusBoard || !categoryTabsBar || !categoryTabsRestorePoint || !topGlobalBar || !topGlobalBarLeft || !globalAthleteSearchWrap) return;
+
+      if (isViewer) {
+        // Chỉ chuyển bộ chọn nội dung lên hàng đầu, sau Lọc sân và trước ô tìm kiếm.
+        topGlobalBarLeft.insertBefore(categoryTabsBar, globalAthleteSearchWrap);
+        // Bảng tình trạng sân luôn ở hàng thứ hai, trải rộng toàn màn hình.
+        topGlobalBar.insertAdjacentElement('afterend', courtStatusBoard);
+        categoryTabsBar.classList.add('viewer-category-layout');
+        courtStatusBoard.classList.add('court-status-viewer-row');
+
+        if (hasBracket) {
+          viewerZoomTarget.appendChild(zoomControls);
+          viewerZoomTarget.appendChild(bracketExportButtons);
+        }
+        viewerZoomTarget.classList.toggle('hidden', !hasBracket);
+        viewerZoomTarget.classList.toggle('inline-flex', hasBracket);
+        if (actionToolbar) actionToolbar.classList.add('hidden');
+      } else {
+        // Trả bộ chọn nội dung và bảng sân về đúng khu vực làm việc của thư ký/Admin.
+        categoryTabsRestorePoint.parentNode.insertBefore(categoryTabsBar, categoryTabsRestorePoint.nextSibling);
+        categoryTabsBar.insertAdjacentElement('afterend', courtStatusBoard);
+        categoryTabsBar.classList.remove('viewer-category-layout');
+        courtStatusBoard.classList.remove('court-status-viewer-row');
+
+        toolbarZoomSlot.appendChild(zoomControls);
+        toolbarExportSlot.appendChild(bracketExportButtons);
+        viewerZoomTarget.classList.add('hidden');
+        viewerZoomTarget.classList.remove('inline-flex');
+        if (actionToolbar) actionToolbar.classList.remove('hidden');
+      }
+    }
+
     function applyRolePermissionsUI() {
       const roleBadge = document.getElementById('currentRoleBadge');
       const authBtnText = document.getElementById('authBtnText');
@@ -2044,6 +2283,8 @@
         deleteOrResetActiveCatBtn.classList.add('flex');
         openScheduleModalBtn.classList.remove('hidden');
         openScheduleModalBtn.classList.add('flex');
+        openScoreboardLinksBtn.classList.remove('hidden');
+        openScoreboardLinksBtn.classList.add('flex');
       } else {
         addCategoryBtn.classList.add('hidden');
         addCategoryBtn.classList.remove('flex');
@@ -2051,6 +2292,8 @@
         deleteOrResetActiveCatBtn.classList.remove('flex');
         openScheduleModalBtn.classList.add('hidden');
         openScheduleModalBtn.classList.remove('flex');
+        openScoreboardLinksBtn.classList.add('hidden');
+        openScoreboardLinksBtn.classList.remove('flex');
       }
 
       const isSecretary = currentRole.startsWith('Sân ');
@@ -2059,6 +2302,7 @@
       compTypeSelect.disabled = !editable;
       categoryNameInput.disabled = !editable;
       tournamentNameInput.disabled = !editable;
+      updateViewerControlLayout();
     }
 
     // Đăng nhập / Đăng xuất phân quyền
@@ -2164,9 +2408,121 @@
       navigator.clipboard.writeText(shareUrl).then(() => showToast('Đã sao chép Link Xem Kết Quả!'));
     });
 
+    // ================= BẢNG TÌNH TRẠNG THI ĐẤU CÁC SÂN =================
+    function getCourtNumber(courtValue) {
+      const match = String(courtValue || 'Sân 1').match(/\d+/);
+      const parsed = match ? parseInt(match[0], 10) : 1;
+      return Math.min(6, Math.max(1, Number.isFinite(parsed) ? parsed : 1));
+    }
+
+    // Số sân hiển thị được suy ra từ số sân cao nhất đang được phân cho các nội dung.
+    // Ví dụ chỉ dùng Sân 1 thì hiện 1 thẻ; có nội dung ở Sân 3 thì hiện Sân 1, 2, 3.
+    function getConfiguredCourtCount() {
+      return Math.max(1, ...categories.map(cat => getCourtNumber(cat.court || 'Sân 1')));
+    }
+
+    function getUpcomingMatchesForCourt(courtName) {
+      const upcoming = [];
+      categories.forEach(cat => {
+        if ((cat.court || 'Sân 1') !== courtName || !cat.isBracketVisible) return;
+
+        const matchNumbers = cat.matchNumbers || {};
+        if (Object.keys(matchNumbers).length === 0) return;
+        const { rounds } = calculateCategoryBracket(cat);
+        rounds.forEach(round => {
+          round.forEach(match => {
+            const matchNo = Number(matchNumbers[match.id]);
+            // Chỉ đưa các trận đã được đánh số, còn kết quả và có ít nhất một nhánh VĐV vào bảng.
+            if (!Number.isFinite(matchNo) || matchNo < 1) return;
+            if (match.winnerPos || !match.hasAnyEntrant) return;
+
+            upcoming.push({
+              matchNo,
+              matchId: match.id,
+              categoryId: cat.id,
+              categoryTitle: cat.title || 'Nội dung chưa đặt tên',
+              roundIndex: match.rIndex,
+              matchIndex: match.mIndex
+            });
+          });
+        });
+      });
+
+      upcoming.sort((a, b) =>
+        a.matchNo - b.matchNo ||
+        String(a.categoryTitle).localeCompare(String(b.categoryTitle), 'vi') ||
+        a.categoryId - b.categoryId ||
+        a.roundIndex - b.roundIndex ||
+        a.matchIndex - b.matchIndex
+      );
+      return upcoming;
+    }
+
+    function renderCourtStatusBoard() {
+      const grid = document.getElementById('courtStatusGrid');
+      if (!grid) return;
+
+      const courtCount = getConfiguredCourtCount();
+      // Mỗi sân chiếm một phần bằng nhau trên hàng thứ hai; không tạo cột cuộn ngang.
+      grid.style.gridTemplateColumns = `repeat(${courtCount}, minmax(0, 1fr))`;
+      grid.style.minWidth = '100%';
+      const cards = [];
+
+      for (let courtNo = 1; courtNo <= courtCount; courtNo++) {
+        const courtName = `Sân ${courtNo}`;
+        const courtCategories = categories.filter(cat => (cat.court || 'Sân 1') === courtName);
+        const upcoming = getUpcomingMatchesForCourt(courtName).slice(0, 3);
+
+        let emptyMessage = '';
+        if (upcoming.length === 0) {
+          if (courtCategories.length === 0) {
+            emptyMessage = 'Chưa có nội dung được phân cho sân này.';
+          } else if (courtCategories.some(cat => !cat.isBracketVisible)) {
+            emptyMessage = 'Chưa có sơ đồ bốc thăm để xếp trận.';
+          } else {
+            emptyMessage = 'Đã hoàn thành các trận đã được đánh số, hoặc sân chưa được xếp lịch.';
+          }
+        }
+
+        const firstUpcomingMatchNo = upcoming.length ? Math.min(...upcoming.map(item => Number(item.matchNo))) : null;
+        const matchRows = upcoming.map(item => {
+          // Chỉ trận có số nhỏ nhất trong các trận chưa hoàn tất được gắn nhãn THI ĐẤU.
+          const isLive = firstUpcomingMatchNo !== null && Number(item.matchNo) === firstUpcomingMatchNo;
+          return `
+            <div class="court-match-row rounded-md px-1.5 py-1 ${isLive ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50 border border-slate-200'}" title="Trận ${item.matchNo} · ${escapeHtml(item.categoryTitle)} · ${isLive ? 'Đang thi đấu' : 'Chuẩn bị'}">
+              <div class="flex items-center justify-between gap-1 min-w-0">
+                <div class="flex items-center gap-1 min-w-0 flex-1">
+                  <span class="text-[10px] font-black text-slate-900 whitespace-nowrap shrink-0">Trận ${item.matchNo}</span>
+                  <span class="court-match-category text-[9px] font-semibold text-slate-600 truncate min-w-0">${escapeHtml(item.categoryTitle)}</span>
+                </div>
+                <span class="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-wide whitespace-nowrap shrink-0 ${isLive ? 'text-emerald-700' : 'text-amber-700'}">
+                  <span class="w-1.5 h-1.5 rounded-full shrink-0 ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}"></span>${isLive ? 'Thi đấu' : 'Chuẩn bị'}
+                </span>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        cards.push(`
+          <article class="court-status-card bg-white border border-slate-200 rounded-lg p-1.5 shadow-sm min-w-0 overflow-hidden">
+            <div class="flex items-center justify-between gap-1 mb-1 pb-1 border-b border-slate-100">
+              <span class="text-[11px] font-black uppercase tracking-wide text-slate-800 whitespace-nowrap">${courtName}</span>
+              <span class="text-[8px] font-extrabold px-1.5 py-0.5 rounded-full whitespace-nowrap ${upcoming.length ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}">${upcoming.length ? `${upcoming.length} trận` : 'Trống'}</span>
+            </div>
+            <div class="space-y-1">
+              ${matchRows || `<div class="text-[9px] leading-tight text-slate-500 italic px-1 py-1">${emptyMessage}</div>`}
+            </div>
+          </article>
+        `);
+      }
+
+      grid.innerHTML = cards.join('');
+    }
+
     // ================= RENDER CỬA SỔ XỔ DỌC CHỌN NỘI DUNG =================
     function renderCategoryTabs() {
       tabsContainer.innerHTML = '';
+      renderCourtStatusBoard();
       const visibleCats = getVisibleCategories();
       const current = getActiveCategory();
 
@@ -3525,6 +3881,8 @@
     }
 
     function renderBracket() {
+      // Cập nhật bảng sân cả khi dữ liệu VĐV / kết quả được chỉnh trực tiếp trên sơ đồ.
+      renderCourtStatusBoard();
       const current = getActiveCategory();
       if (!current || !current.isBracketVisible) {
         emptyState.classList.remove('hidden');
@@ -4567,6 +4925,9 @@
         cloneWrapper.style.width = 'max-content';
 
         const cloneHeader = fixedTournamentHeaderBar.cloneNode(true);
+        // Không đưa cụm điều khiển thu phóng vào ảnh sơ đồ.
+        const clonedViewerZoomTarget = cloneHeader.querySelector('#viewerZoomTarget');
+        if (clonedViewerZoomTarget) clonedViewerZoomTarget.remove();
         cloneHeader.style.borderBottom = 'none';
         cloneHeader.style.marginBottom = '16px';
         const clonedInput = cloneHeader.querySelector('#tournamentNameInput');
@@ -4612,7 +4973,6 @@
       }
     });
 
-    document.getElementById('printBracketBtn').addEventListener('click', () => window.print());
 
     function escapeHtml(str) {
       if (!str) return "";
@@ -4627,6 +4987,307 @@
     // Khởi chạy
     syncUIFromActiveCategory();
     initSmartBandwidthSystem();
+
+
+    // ================= KẾT NỐI BẢNG ĐIỂM THEO TỪNG SÂN (SÂN 1 -> SÂN 6) =================
+    const scoreboardLinksRef = tournamentRef.child('scoreboardLinks');
+    let courtScoreboardUrls = {
+      "Sân 1": "https://bangdiem2-36e35-default-rtdb.asia-southeast1.firebasedatabase.app",
+      "Sân 2": "",
+      "Sân 3": "",
+      "Sân 4": "",
+      "Sân 5": "",
+      "Sân 6": ""
+    };
+
+    try {
+      const cachedLinks = localStorage.getItem('viho_scoreboard_links_v1');
+      if (cachedLinks) {
+        courtScoreboardUrls = { ...courtScoreboardUrls, ...JSON.parse(cachedLinks) };
+      }
+    } catch (e) {}
+
+    const courtDbInstances = {};
+    const courtActiveListeners = {};
+    const processedBoardResults = {};
+
+    function extractFirebaseDbUrl(rawInput) {
+      if (!rawInput) return "";
+      const str = String(rawInput).trim();
+      const urlMatch = str.match(/https:\/\/[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.(?:firebaseio\.com|firebasedatabase\.app)/i);
+      if (urlMatch) return urlMatch[0].replace(/\/$/, "");
+      return str.replace(/\/$/, "");
+    }
+
+    function getScoreboardDbForCourt(courtName, dbUrl) {
+      const cleanUrl = extractFirebaseDbUrl(dbUrl);
+      if (!cleanUrl || !cleanUrl.startsWith('https://')) return null;
+
+      const safeKey = btoa(unescape(encodeURIComponent(cleanUrl))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 14);
+      const appName = "SB_COURT_" + courtName.replace(/\s+/g, '_') + "_" + safeKey;
+      if (!courtDbInstances[appName]) {
+        let appInstance = firebase.apps.find(a => a.name === appName);
+        if (!appInstance) {
+          appInstance = firebase.initializeApp({ databaseURL: cleanUrl }, appName);
+        }
+        courtDbInstances[appName] = firebase.database(appInstance);
+      }
+      return courtDbInstances[appName];
+    }
+
+    function pushCourtMatchesToScoreboard(courtName) {
+      if (currentRole === 'viewer') return;
+      if (currentRole.startsWith('Sân ') && currentRole !== courtName) return;
+
+      const dbUrl = courtScoreboardUrls[courtName];
+      const sbDb = getScoreboardDbForCourt(courtName, dbUrl);
+      if (!sbDb) return;
+
+      const queuePayload = [];
+      categories.forEach(cat => {
+        if ((cat.court || 'Sân 1') !== courtName || !cat.isBracketVisible) return;
+        const matchNumbers = cat.matchNumbers || {};
+        const { rounds } = calculateCategoryBracket(cat);
+        const totalRounds = rounds.length;
+
+        rounds.forEach((round, rIdx) => {
+          const rTitle = getRoundTitle(rIdx, totalRounds);
+          round.forEach(match => {
+            const matchNo = matchNumbers[match.id];
+            if (!matchNo || match.isBye || match.winnerPos) return;
+
+            const hasP1 = match.p1 && !match.p1.isEmpty && (match.p1.name || match.p1.unit);
+            const hasP2 = match.p2 && !match.p2.isEmpty && (match.p2.name || match.p2.unit);
+            if (!hasP1 && !hasP2) return;
+
+            const blueDisplay = hasP1
+              ? `${match.p1.name || ('VĐV #' + match.p1.seed)}${match.p1.unit ? ' (' + match.p1.unit + ')' : ''}`
+              : 'Chờ kết quả...';
+            const redDisplay = hasP2
+              ? `${match.p2.name || ('VĐV #' + match.p2.seed)}${match.p2.unit ? ' (' + match.p2.unit + ')' : ''}`
+              : 'Chờ kết quả...';
+
+            queuePayload.push({
+              matchNum: String(matchNo),
+              bName: blueDisplay,
+              rName: redDisplay,
+              content: `${cat.title || 'Hạng cân'} - ${rTitle}`,
+              schemaCatId: cat.id,
+              schemaMatchId: match.id
+            });
+          });
+        });
+      });
+
+      queuePayload.sort((a, b) => (parseInt(a.matchNum, 10) || 9999) - (parseInt(b.matchNum, 10) || 9999));
+
+      sbDb.ref('schema_queue').set(queuePayload).catch(err => {
+        console.warn(`Lỗi đẩy lịch trận xuống ${courtName}:`, err);
+      });
+
+      sbDb.ref('match').once('value').then(snap => {
+        const curBoard = snap.val();
+        if (!curBoard || curBoard.run || curBoard.matchFinished) return;
+        const matchedItem = queuePayload.find(q => String(q.matchNum).toUpperCase() === String(curBoard.matchNum).toUpperCase());
+        if (matchedItem) {
+          sbDb.ref('match').update({
+            bName: matchedItem.bName,
+            rName: matchedItem.rName,
+            matchContent: matchedItem.content,
+            schemaCatId: matchedItem.schemaCatId,
+            schemaMatchId: matchedItem.schemaMatchId
+          });
+        }
+      }).catch(() => {});
+    }
+
+    function pushAllLinkedCourtsToScoreboards() {
+      Object.keys(courtScoreboardUrls).forEach(courtName => {
+        if (courtScoreboardUrls[courtName]) {
+          pushCourtMatchesToScoreboard(courtName);
+        }
+      });
+    }
+
+    function handleIncomingScoreboardResult(courtName, boardMatchData) {
+      if (!boardMatchData || !boardMatchData.matchFinished) return;
+      if (currentRole === 'viewer') return;
+      if (currentRole.startsWith('Sân ') && currentRole !== courtName) return;
+
+      const winSide = boardMatchData.matchWinnerSide || boardMatchData.winSide;
+      if (winSide !== 'blue' && winSide !== 'red') return;
+
+      const resultSignature = `${boardMatchData.matchNum}_${boardMatchData.schemaCatId}_${boardMatchData.schemaMatchId}_${winSide}_${boardMatchData.rW}_${boardMatchData.bW}_${boardMatchData.winReason || ''}`;
+      if (processedBoardResults[courtName] === resultSignature) return;
+      processedBoardResults[courtName] = resultSignature;
+
+      let targetCat = null;
+      let targetMatchId = null;
+
+      if (boardMatchData.schemaCatId && boardMatchData.schemaMatchId) {
+        targetCat = categories.find(c => Number(c.id) === Number(boardMatchData.schemaCatId));
+        targetMatchId = boardMatchData.schemaMatchId;
+      }
+
+      if (!targetCat || !targetMatchId) {
+        const boardMatchNum = String(boardMatchData.matchNum || '').trim();
+        for (const cat of categories) {
+          if ((cat.court || 'Sân 1') !== courtName || !cat.isBracketVisible) continue;
+          const entries = Object.entries(cat.matchNumbers || {});
+          const found = entries.find(([mId, mNum]) => String(mNum).trim() === boardMatchNum);
+          if (found) {
+            targetCat = cat;
+            targetMatchId = found[0];
+            break;
+          }
+        }
+      }
+
+      if (!targetCat || !targetMatchId || !canEditCategory(targetCat)) return;
+
+      const winnerPos = winSide === 'blue' ? 1 : 2;
+
+      if (!targetCat.winners) targetCat.winners = {};
+      if (!targetCat.matchScores) targetCat.matchScores = {};
+
+      const scoreObj = {
+        r1B: boardMatchData.bR1 !== undefined && boardMatchData.bR1 !== "" ? String(boardMatchData.bR1) : "",
+        r1R: boardMatchData.rR1 !== undefined && boardMatchData.rR1 !== "" ? String(boardMatchData.rR1) : "",
+        r2B: boardMatchData.bR2 !== undefined && boardMatchData.bR2 !== "" ? String(boardMatchData.bR2) : "",
+        r2R: boardMatchData.rR2 !== undefined && boardMatchData.rR2 !== "" ? String(boardMatchData.rR2) : "",
+        r3B: boardMatchData.bR3 !== undefined && boardMatchData.bR3 !== "" ? String(boardMatchData.bR3) : "",
+        r3R: boardMatchData.rR3 !== undefined && boardMatchData.rR3 !== "" ? String(boardMatchData.rR3) : "",
+        tb1: boardMatchData.wR1 === 'blue' ? 1 : (boardMatchData.wR1 === 'red' ? 2 : null),
+        tb2: boardMatchData.wR2 === 'blue' ? 1 : (boardMatchData.wR2 === 'red' ? 2 : null),
+        tb3: boardMatchData.wR3 === 'blue' ? 1 : (boardMatchData.wR3 === 'red' ? 2 : null),
+        winReason: boardMatchData.winReason || ""
+      };
+
+      const hasAnyRoundScore = [scoreObj.r1B, scoreObj.r1R, scoreObj.r2B, scoreObj.r2R, scoreObj.r3B, scoreObj.r3R].some(v => v !== "");
+      targetCat.winners[targetMatchId] = winnerPos;
+      if (hasAnyRoundScore || scoreObj.winReason) {
+        targetCat.matchScores[targetMatchId] = scoreObj;
+      }
+
+      saveMatchResultAndScoreToFirebase(targetCat, targetMatchId, winnerPos, (hasAnyRoundScore || scoreObj.winReason) ? scoreObj : null);
+      renderCategoryTabs();
+      renderBracket();
+      if (isSummaryView) renderSummaryView();
+
+      const winnerLabel = winSide === 'blue' ? (boardMatchData.bName || 'VĐV Xanh') : (boardMatchData.rName || 'VĐV Đỏ');
+      const reasonBadge = boardMatchData.winReason === 'WDR' ? ' (Thắng Bỏ cuộc)' : '';
+      showToast(`🎯 [${courtName} - Trận ${boardMatchData.matchNum}] Đã đồng bộ: ${winnerLabel} thắng${reasonBadge}!`);
+
+      setTimeout(() => pushCourtMatchesToScoreboard(courtName), 400);
+    }
+
+    function attachListenersForAllScoreboards() {
+      Object.keys(courtActiveListeners).forEach(courtName => {
+        const refObj = courtActiveListeners[courtName];
+        if (refObj) refObj.off();
+        delete courtActiveListeners[courtName];
+      });
+
+      if (currentRole === 'viewer') return;
+
+      Object.entries(courtScoreboardUrls).forEach(([courtName, rawUrl]) => {
+        if (!rawUrl) return;
+        if (currentRole.startsWith('Sân ') && currentRole !== courtName) return;
+
+        const sbDb = getScoreboardDbForCourt(courtName, rawUrl);
+        if (!sbDb) return;
+
+        const mRef = sbDb.ref('match');
+        courtActiveListeners[courtName] = mRef;
+
+        mRef.on('value', (snap) => {
+          const data = snap.val();
+          if (data && data.matchFinished) {
+            handleIncomingScoreboardResult(courtName, data);
+          }
+        });
+
+        pushCourtMatchesToScoreboard(courtName);
+      });
+    }
+
+    fetchFirebaseRest('viho_tournament_v1/scoreboardLinks').then(linksData => {
+      if (linksData) {
+        courtScoreboardUrls = { ...courtScoreboardUrls, ...linksData };
+        attachListenersForAllScoreboards();
+        renderCourtStatusBoard();
+      }
+    }).catch(() => {});
+
+    scoreboardLinksRef.on('value', (snap) => {
+      const val = snap.val();
+      if (val) {
+        courtScoreboardUrls = { ...courtScoreboardUrls, ...val };
+        attachListenersForAllScoreboards();
+        renderCourtStatusBoard();
+      }
+    });
+
+    const scoreboardLinksModal = document.getElementById('scoreboardLinksModal');
+    const scoreboardLinksForm = document.getElementById('scoreboardLinksForm');
+
+    openScoreboardLinksBtn.addEventListener('click', () => {
+      const courts = [1, 2, 3, 4, 5, 6];
+      scoreboardLinksForm.innerHTML = courts.map(num => {
+        const cName = `Sân ${num}`;
+        const isEditable = currentRole === 'admin' || currentRole === cName;
+        const currentUrl = courtScoreboardUrls[cName] || '';
+        const isConnected = Boolean(extractFirebaseDbUrl(currentUrl));
+        return `
+          <div class="p-3 rounded-xl bg-slate-800/90 border ${isConnected ? 'border-emerald-500/50' : 'border-slate-700'} flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="w-44 shrink-0 flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}"></span>
+              <span class="text-xs font-black uppercase text-amber-400">Sân ${num} - Bảng điểm sân ${num}</span>
+            </div>
+            <input
+              type="text"
+              data-sb-court="${cName}"
+              value="${escapeHtml(currentUrl)}"
+              ${!isEditable ? 'disabled' : ''}
+              placeholder="Dán link Bảng điểm sân ${num} (databaseURL)..."
+              class="sb-link-input flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+            />
+          </div>
+        `;
+      }).join('');
+      scoreboardLinksModal.classList.remove('hidden');
+    });
+
+    document.getElementById('closeScoreboardLinksBtn').addEventListener('click', () => {
+      scoreboardLinksModal.classList.add('hidden');
+    });
+
+    document.getElementById('saveScoreboardLinksBtn').addEventListener('click', () => {
+      scoreboardLinksForm.querySelectorAll('.sb-link-input').forEach(inp => {
+        const cName = inp.getAttribute('data-sb-court');
+        if (currentRole === 'admin' || currentRole === cName) {
+          courtScoreboardUrls[cName] = extractFirebaseDbUrl(inp.value);
+        }
+      });
+      try { localStorage.setItem('viho_scoreboard_links_v1', JSON.stringify(courtScoreboardUrls)); } catch (e) {}
+      scoreboardLinksRef.set(courtScoreboardUrls);
+      attachListenersForAllScoreboards();
+      scoreboardLinksModal.classList.add('hidden');
+      showToast('Đã lưu liên kết Bảng điểm các sân và đồng bộ lịch thi đấu!');
+    });
+
+    document.getElementById('pushAllCourtsNowBtn').addEventListener('click', () => {
+      pushAllLinkedCourtsToScoreboards();
+      showToast('Đã đẩy danh sách các trận đấu mới nhất xuống tất cả các Bảng điểm!');
+    });
+
+    document.getElementById('applyScheduleBtn').addEventListener('click', () => {
+      setTimeout(() => pushAllLinkedCourtsToScoreboards(), 500);
+    });
+
+    document.getElementById('confirmLoginBtn').addEventListener('click', () => {
+      setTimeout(() => attachListenersForAllScoreboards(), 300);
+    });
   </script>
 </body>
 </html>
