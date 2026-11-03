@@ -1009,6 +1009,9 @@
 
           <div id="toolbarExportSlot" class="flex flex-wrap items-center gap-2">
             <div id="bracketExportButtonsGroup" class="flex flex-wrap items-center gap-2">
+            <button id="printBracketBtn" type="button" class="py-1.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer">
+              In Sơ Đồ
+            </button>
             <button id="saveImageBtn" class="py-1.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer">
               <span id="saveImageBtnText">Lưu Ảnh Rõ Nét</span>
             </button>
@@ -2188,6 +2191,8 @@
 
     function updateViewerControlLayout() {
       const isViewer = currentRole === 'viewer';
+      const printBracketBtn = document.getElementById('printBracketBtn');
+      if (printBracketBtn) printBracketBtn.classList.toggle('hidden', isViewer);
       const current = getActiveCategory();
       const hasBracket = Boolean(current && current.isBracketVisible && !isSummaryView);
       const actionToolbar = document.getElementById('actionToolbar');
@@ -4950,6 +4955,78 @@
         if (clonedStickyRow) clonedStickyRow.style.transform = 'none';
         if (clonedStickyWrap) { clonedStickyWrap.style.position = 'static'; clonedStickyWrap.style.width = 'auto'; clonedStickyWrap.style.height = 'auto'; }
 
+        // Chuẩn hóa căn giữa các nhãn có nền màu RIÊNG TRONG ẢNH XUẤT.
+        // html2canvas đôi khi làm lệch baseline chữ/số trong các ô inline-flex.
+        const centerBadge = (el, display = 'inline-flex') => {
+          if (!el) return;
+          el.style.boxSizing = 'border-box';
+          el.style.display = display;
+          el.style.alignItems = 'center';
+          el.style.justifyContent = 'center';
+          el.style.textAlign = 'center';
+          el.style.verticalAlign = 'middle';
+          el.style.lineHeight = '1';
+          el.style.paddingTop = '0';
+          el.style.paddingBottom = '0';
+          el.style.whiteSpace = 'nowrap';
+          el.style.flexShrink = '0';
+        };
+
+        // Ô số thăm xanh/đỏ, số trận màu vàng và ô tỉ số màu xám.
+        cloneArea.querySelectorAll('.seed-badge').forEach(el => {
+          centerBadge(el, 'inline-flex');
+          el.style.width = '28px';
+          el.style.height = '28px';
+          el.style.minWidth = '28px';
+          el.style.minHeight = '28px';
+        });
+        cloneArea.querySelectorAll('.match-no-badge').forEach(el => {
+          centerBadge(el, 'inline-flex');
+          el.style.height = '20px';
+          el.style.minHeight = '20px';
+          el.style.paddingLeft = '8px';
+          el.style.paddingRight = '8px';
+        });
+        cloneArea.querySelectorAll('.match-card-box .bg-slate-800.text-white').forEach(el => {
+          centerBadge(el, 'inline-flex');
+          el.style.minHeight = '20px';
+          el.style.paddingLeft = '6px';
+          el.style.paddingRight = '6px';
+        });
+
+        // Các nhãn thể thức/sân màu xanh lá và cam; tiêu đề vòng màu xám/vàng.
+        ['#bracketCompTypeBadge', '#bracketCourtBadge'].forEach(selector => {
+          const el = cloneHeader.querySelector(selector);
+          centerBadge(el, 'inline-flex');
+          if (el) el.style.height = '24px';
+        });
+        cloneArea.querySelectorAll('.round-badge').forEach(el => {
+          centerBadge(el, 'flex');
+          el.style.height = '32px';
+          el.style.minHeight = '32px';
+          el.style.paddingLeft = '8px';
+          el.style.paddingRight = '8px';
+        });
+        cloneArea.querySelectorAll('.match-card-box > .bg-slate-100').forEach(el => {
+          el.style.boxSizing = 'border-box';
+          el.style.display = 'flex';
+          el.style.alignItems = 'center';
+          el.style.lineHeight = '1.25';
+          el.style.minHeight = '30px';
+        });
+        cloneArea.querySelectorAll('.match-card-box .athletes-pair-box > div').forEach(el => {
+          el.style.boxSizing = 'border-box';
+          el.style.display = 'flex';
+          el.style.alignItems = 'center';
+          el.style.lineHeight = '1.3';
+        });
+        cloneArea.querySelectorAll('.match-card-box .bg-slate-50').forEach(el => {
+          el.style.boxSizing = 'border-box';
+          el.style.display = 'flex';
+          el.style.alignItems = 'center';
+          el.style.lineHeight = '1.2';
+        });
+
         cloneWrapper.appendChild(cloneHeader);
         cloneWrapper.appendChild(cloneArea);
         document.body.appendChild(cloneWrapper);
@@ -4973,6 +5050,8 @@
       }
     });
 
+
+    document.getElementById('printBracketBtn').addEventListener('click', () => window.print());
 
     function escapeHtml(str) {
       if (!str) return "";
