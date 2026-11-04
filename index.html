@@ -362,6 +362,10 @@
             <input type="checkbox" id="autoDrawOnImportCheckbox" checked class="w-4 h-4 accent-amber-500 rounded" />
             <span>🎲 Tự động bốc thăm ngẫu nhiên luôn cho các nội dung chưa có số thăm</span>
           </label>
+          <label class="flex items-center gap-2 px-1 text-xs font-bold text-orange-300 cursor-pointer select-none">
+            <input type="checkbox" id="thirdPlaceOnImportCheckbox" class="w-4 h-4 accent-orange-500 rounded" />
+            <span>🥉 Tổ chức đấu Tranh Hạng 3 cho các nội dung nhập vào (Bỏ chọn = Đồng hạng 3)</span>
+          </label>
 
           <div class="pt-1 flex flex-wrap gap-2">
             <input type="file" id="masterExcelFileInput" accept=".xlsx,.xls,.csv" class="hidden" />
@@ -797,6 +801,14 @@
           </div>
         </div>
 
+        <label id="sidebarThirdPlaceWrap" class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-800/90 border border-orange-500/40 cursor-pointer select-none hover:bg-slate-800 transition-colors" title="Tích chọn để 2 VĐV thua ở Bán kết vào đấu Tranh hạng 3; bỏ chọn sẽ trao Đồng hạng 3">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="sidebarThirdPlaceCheckbox" class="w-4 h-4 accent-orange-500 rounded cursor-pointer" />
+            <span class="text-xs font-extrabold text-orange-300 uppercase tracking-wide">🥉 Đấu Tranh Hạng 3 (2 trận thua BK)</span>
+          </div>
+          <span id="sidebarThirdPlaceModeBadge" class="text-[10px] font-black px-2 py-0.5 rounded bg-slate-700 text-slate-300 border border-slate-600">Đồng hạng 3</span>
+        </label>
+
         <div class="grid grid-cols-2 gap-2">
           <button id="drawBtn" class="py-2 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs rounded-lg shadow-lg flex items-center justify-center gap-1 cursor-pointer">
             <span>🎲 BỐC THĂM MỤC NÀY</span>
@@ -992,6 +1004,10 @@
                 <option value="Sân 6">Sân 6</option>
               </select>
             </div>
+            <label id="toolbarThirdPlaceWrap" class="flex items-center gap-1.5 bg-orange-50 border border-orange-300 rounded-lg px-2.5 py-1 cursor-pointer select-none hover:bg-orange-100/80 transition-colors" title="Tích chọn để 2 VĐV thua Bán kết đấu Tranh hạng 3; bỏ chọn để trao Đồng hạng 3">
+              <input type="checkbox" id="toolbarThirdPlaceCheckbox" class="w-4 h-4 accent-orange-600 rounded cursor-pointer" />
+              <span class="text-xs font-black text-orange-800 uppercase">🥉 Tranh Hạng 3</span>
+            </label>
 
             <!-- Cụm điều khiển Thu Phóng (Zoom To - Nhỏ) -->
             <div id="toolbarZoomSlot" class="flex items-center">
@@ -1046,6 +1062,9 @@
                   <div id="bracketCourtBadge" class="inline-flex items-center justify-center px-2.5 h-6 rounded-lg bg-amber-500 text-slate-950 font-black text-[11px] uppercase tracking-wider shadow-xs">
                     SÂN THI ĐẤU: SÂN 1
                   </div>
+                  <div id="bracketThirdPlaceBadge" class="inline-flex items-center justify-center px-2.5 h-6 rounded-lg bg-slate-700 text-orange-200 font-black text-[11px] uppercase tracking-wider shadow-xs">
+                    🥉 ĐỒNG HẠNG 3
+                  </div>
                   <div id="viewerZoomTarget" class="hidden items-center"></div>
                 </div>
               </div>
@@ -1082,7 +1101,7 @@
             <div>
               <span class="text-xs font-black uppercase tracking-widest text-amber-400">Bảng Vàng Thành Tích</span>
               <h2 id="summaryTournamentTitle" class="text-xl md:text-2xl font-black uppercase mt-0.5">Tổng Hợp Kết Quả Toàn Đoàn</h2>
-              <p class="text-xs text-slate-300 mt-1">Tự động cập nhật từ kết quả Chung kết (HCV, HCB) và Bán kết (Đồng HCĐ) của tất cả các hạng cân cá nhân & đồng đội.</p>
+              <p class="text-xs text-slate-300 mt-1">Tự động cập nhật từ kết quả Chung kết (HCV, HCB) và Hạng 3 (Tranh Hạng 3 hoặc Đồng HCĐ) của tất cả các hạng cân cá nhân & đồng đội.</p>
             </div>
             <div class="flex items-center gap-2.5">
               <button id="exportSummaryExcelBtn" class="py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-lg flex items-center gap-2 cursor-pointer">
@@ -1130,7 +1149,7 @@
                     <th class="py-3.5 px-4 w-24 text-center">Sân</th>
                     <th class="py-3.5 px-4 bg-yellow-50/60 text-yellow-800">🥇 Huy Chương Vàng (Đơn vị)</th>
                     <th class="py-3.5 px-4 bg-slate-100 text-slate-700">🥈 Huy Chương Bạc (Đơn vị)</th>
-                    <th class="py-3.5 px-4 bg-orange-50/60 text-orange-800">🥉 Đồng Huy Chương Đồng (Đơn vị)</th>
+                    <th class="py-3.5 px-4 bg-orange-50/60 text-orange-800">🥉 Huy Chương Đồng / Hạng 3 (Đơn vị)</th>
                   </tr>
                 </thead>
                 <tbody id="categoryMedalsTableBody" class="divide-y divide-slate-200 text-sm"></tbody>
@@ -1261,6 +1280,7 @@
         compType: compType,
         tournamentName: "Giải Taekwondo Nội Bộ - CLB Vĩ Hồ",
         size: defaultSize,
+        hasThirdPlaceMatch: false,
         isBracketVisible: false,
         participants: Array.from({ length: defaultSize }, (_, i) => createEmptyParticipant(i, compType)),
         winners: {},
@@ -1346,6 +1366,7 @@
         compType: compType,
         tournamentName: c?.tournamentName || "Giải Taekwondo Nội Bộ - CLB Vĩ Hồ",
         size: size,
+        hasThirdPlaceMatch: Boolean(c?.hasThirdPlaceMatch),
         isBracketVisible: Boolean(c?.isBracketVisible),
         participants: Array.from({ length: size }, (_, i) => {
           const rp = rawParts[i] || {};
@@ -1713,10 +1734,14 @@
         return { text: "(Chưa bốc thăm)", isCompleted: false, badgeClass: "bg-slate-800 text-slate-400 border-slate-700" };
       }
 
-      const { rounds, champion } = calculateCategoryBracket(cat);
+      const { rounds, champion, thirdPlaceMatch } = calculateCategoryBracket(cat);
       const totalRounds = rounds.length;
 
-      if (champion && !champion.isEmpty) {
+      const thirdPlaceDone = !cat.hasThirdPlaceMatch || !thirdPlaceMatch ||
+        (thirdPlaceMatch.semi1NoLoserPossible && thirdPlaceMatch.semi2NoLoserPossible) ||
+        Boolean(thirdPlaceMatch.winnerPos);
+
+      if (champion && !champion.isEmpty && thirdPlaceDone) {
         return { text: "✅ Đã xong", isCompleted: true, badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" };
       }
 
@@ -1725,6 +1750,9 @@
         const activeMatches = roundMatches.filter(m => (m.p1 && !m.p1.isEmpty) || (m.p2 && !m.p2.isEmpty));
         const unfinishedActive = activeMatches.some(m => !m.winnerPos);
         if (unfinishedActive || activeMatches.length === 0) {
+          if (r === totalRounds - 1 && cat.hasThirdPlaceMatch && champion && !champion.isEmpty && !thirdPlaceDone) {
+            return { text: "(Tranh Hạng 3)", isCompleted: false, badgeClass: "bg-orange-500/20 text-orange-300 border-orange-500/40" };
+          }
           const rTitle = getRoundTitle(r, totalRounds);
           return { text: `(${rTitle})`, isCompleted: false, badgeClass: "bg-sky-500/20 text-sky-300 border-sky-500/40" };
         }
@@ -2014,9 +2042,13 @@
     const sidebarCategoryNameInput = document.getElementById('sidebarCategoryNameInput');
     const sidebarCourtSelect = document.getElementById('sidebarCourtSelect');
     const toolbarCourtSelect = document.getElementById('toolbarCourtSelect');
+    const sidebarThirdPlaceCheckbox = document.getElementById('sidebarThirdPlaceCheckbox');
+    const toolbarThirdPlaceCheckbox = document.getElementById('toolbarThirdPlaceCheckbox');
+    const sidebarThirdPlaceModeBadge = document.getElementById('sidebarThirdPlaceModeBadge');
     const bracketCategorySubtitle = document.getElementById('bracketCategorySubtitle');
     const bracketCompTypeBadge = document.getElementById('bracketCompTypeBadge');
     const bracketCourtBadge = document.getElementById('bracketCourtBadge');
+    const bracketThirdPlaceBadge = document.getElementById('bracketThirdPlaceBadge');
     const tabsContainer = document.getElementById('tabsContainer');
     const addCategoryBtn = document.getElementById('addCategoryBtn');
     const deleteOrResetActiveCatBtn = document.getElementById('deleteOrResetActiveCatBtn');
@@ -2305,6 +2337,8 @@
       sidebarCourtSelect.disabled = isSecretary || !editable;
       toolbarCourtSelect.disabled = isSecretary || !editable;
       compTypeSelect.disabled = !editable;
+      if (sidebarThirdPlaceCheckbox) sidebarThirdPlaceCheckbox.disabled = !editable;
+      if (toolbarThirdPlaceCheckbox) toolbarThirdPlaceCheckbox.disabled = !editable;
       categoryNameInput.disabled = !editable;
       tournamentNameInput.disabled = !editable;
       updateViewerControlLayout();
@@ -2583,6 +2617,7 @@
             <span class="px-1.5 py-0.5 text-[10px] rounded border font-extrabold shrink-0 ${stageBadgeClass}">${escapeHtml(progress.text)}</span>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            ${cat.hasThirdPlaceMatch ? `<span class="px-1.5 py-0.5 text-[9px] rounded ${isActive ? 'bg-orange-400 text-slate-950' : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'} font-black" title="Có đấu Tranh Hạng 3">🥉 Tranh H3</span>` : ''}
             ${cat.compType && cat.compType !== 'single' ? `<span class="px-1.5 py-0.5 text-[9px] rounded ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'} font-black">${escapeHtml(cfg.label)}</span>` : ''}
             <span class="px-1.5 py-0.5 text-[10px] rounded ${isActive ? 'bg-amber-400 text-slate-950' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'} font-extrabold">${escapeHtml(cat.court || 'Sân 1')}</span>
             ${canDel ? `<button data-del-id="${cat.id}" class="del-tab-btn ml-1 p-1 rounded hover:bg-red-600 hover:text-white ${isActive ? 'text-white/90' : 'text-slate-400'} transition-colors" title="Xóa nội dung này">✕</button>` : ''}
@@ -2625,6 +2660,21 @@
       sidebarCategoryNameInput.value = current.title;
       sidebarCourtSelect.value = current.court || "Sân 1";
       toolbarCourtSelect.value = current.court || "Sân 1";
+      const has3rd = Boolean(current.hasThirdPlaceMatch);
+      if (sidebarThirdPlaceCheckbox) sidebarThirdPlaceCheckbox.checked = has3rd;
+      if (toolbarThirdPlaceCheckbox) toolbarThirdPlaceCheckbox.checked = has3rd;
+      if (sidebarThirdPlaceModeBadge) {
+        sidebarThirdPlaceModeBadge.textContent = has3rd ? "Tranh hạng 3" : "Đồng hạng 3";
+        sidebarThirdPlaceModeBadge.className = has3rd
+          ? "text-[10px] font-black px-2 py-0.5 rounded bg-orange-500 text-slate-950 shadow-xs"
+          : "text-[10px] font-black px-2 py-0.5 rounded bg-slate-700 text-slate-300 border border-slate-600";
+      }
+      if (bracketThirdPlaceBadge) {
+        bracketThirdPlaceBadge.textContent = has3rd ? "🥉 ĐẤU TRANH HẠNG 3" : "🥉 ĐỒNG HẠNG 3";
+        bracketThirdPlaceBadge.className = has3rd
+          ? "inline-flex items-center justify-center px-2.5 h-6 rounded-lg bg-orange-600 text-white font-black text-[11px] uppercase tracking-wider shadow-xs"
+          : "inline-flex items-center justify-center px-2.5 h-6 rounded-lg bg-slate-700 text-orange-200 font-black text-[11px] uppercase tracking-wider shadow-xs";
+      }
       bracketCategorySubtitle.textContent = `Nội dung: ${current.title || '---'}`;
       bracketCompTypeBadge.textContent = cfg.badge;
       bracketCourtBadge.textContent = `SÂN THI ĐẤU: ${(current.court || 'Sân 1').toUpperCase()}`;
@@ -2725,6 +2775,27 @@
 
     sidebarCourtSelect.addEventListener('change', (e) => updateCategoryCourt(e.target.value));
     toolbarCourtSelect.addEventListener('change', (e) => updateCategoryCourt(e.target.value));
+
+    function updateCategoryThirdPlaceMode(enabled) {
+      const current = getActiveCategory();
+      if (!canEditCategory(current)) return;
+      current.hasThirdPlaceMatch = Boolean(enabled);
+      saveOneCategoryToFirebase(current, true);
+      syncUIFromActiveCategory();
+      if (typeof pushCourtMatchesToScoreboard === 'function') {
+        pushCourtMatchesToScoreboard(current.court || 'Sân 1');
+      }
+      showToast(current.hasThirdPlaceMatch
+        ? '🥉 Đã bật chế độ Tranh Hạng 3: 2 VĐV thua ở Bán kết sẽ gặp nhau tranh HCĐ!'
+        : '🥉 Đã chuyển sang chế độ Đồng Hạng 3: 2 VĐV thua ở Bán kết cùng nhận HCĐ!');
+    }
+
+    if (sidebarThirdPlaceCheckbox) {
+      sidebarThirdPlaceCheckbox.addEventListener('change', (e) => updateCategoryThirdPlaceMode(e.target.checked));
+    }
+    if (toolbarThirdPlaceCheckbox) {
+      toolbarThirdPlaceCheckbox.addEventListener('change', (e) => updateCategoryThirdPlaceMode(e.target.checked));
+    }
 
     // ================= CHỨC NĂNG ZOOM TO - NHỎ SƠ ĐỒ THI ĐẤU =================
     const zoomStage = document.getElementById('zoomStage');
@@ -3383,6 +3454,8 @@
       const finalMatch = generatedRounds[numRounds - 1][0];
       let gold = null, silver = null;
       const bronzes = [];
+      const semiLosers = [];
+      let thirdPlaceMatch = null;
 
       if (finalMatch) {
         if (finalMatch.winnerPos === 1) {
@@ -3396,16 +3469,67 @@
 
       if (numRounds >= 2) {
         const semiMatches = generatedRounds[numRounds - 2];
-        semiMatches.forEach(sm => {
-          if (sm.winnerPos === 1 && sm.p2 && !sm.p2.isEmpty && (sm.p2.name || sm.p2.unit)) bronzes.push(sm.p2);
-          else if (sm.winnerPos === 2 && sm.p1 && !sm.p1.isEmpty && (sm.p1.name || sm.p1.unit)) bronzes.push(sm.p1);
-        });
+        const semiM1 = semiMatches[0];
+        const semiM2 = semiMatches[1];
+
+        const getSemiLoser = (sm) => {
+          if (!sm || !sm.winnerPos) return null;
+          const loser = sm.winnerPos === 1 ? sm.p2 : sm.p1;
+          return isRealDrawParticipant(loser) ? loser : null;
+        };
+
+        const loser1 = getSemiLoser(semiM1);
+        const loser2 = getSemiLoser(semiM2);
+        if (loser1) semiLosers.push(loser1);
+        if (loser2) semiLosers.push(loser2);
+
+        if (cat.hasThirdPlaceMatch) {
+          const rIdx = numRounds - 1;
+          const tpMatchId = `r${rIdx}-m1`;
+          const tpScoreObj = matchScores[tpMatchId] || null;
+          const tpEvalScore = evaluateBestOf3(tpScoreObj);
+
+          const hasTp1 = isRealDrawParticipant(loser1);
+          const hasTp2 = isRealDrawParticipant(loser2);
+
+          // Nhánh Bán kết không thể sinh ra người thua nếu nhánh đó trống hoặc là trận BYE (chỉ có 1 VĐV vào thẳng CK).
+          const semi1NoLoserPossible = !semiM1 || !semiM1.hasAnyEntrant || semiM1.isBye;
+          const semi2NoLoserPossible = !semiM2 || !semiM2.hasAnyEntrant || semiM2.isBye;
+
+          const tpIsBye = (hasTp1 && semi2NoLoserPossible) || (hasTp2 && semi1NoLoserPossible);
+          const tpByeWinnerPos = tpIsBye ? (hasTp1 ? 1 : 2) : null;
+          const tpWinnerPos = tpByeWinnerPos || tpEvalScore.autoWinnerPos || winners[tpMatchId] || null;
+
+          thirdPlaceMatch = {
+            id: tpMatchId,
+            rIndex: rIdx,
+            mIndex: 1,
+            isThirdPlace: true,
+            p1: loser1,
+            p2: loser2,
+            winnerPos: tpWinnerPos,
+            isBye: tpIsBye,
+            semi1NoLoserPossible,
+            semi2NoLoserPossible,
+            hasAnyEntrant: hasTp1 || hasTp2,
+            scoreObj: tpScoreObj,
+            evalScore: tpEvalScore
+          };
+
+          generatedRounds[rIdx].push(thirdPlaceMatch);
+
+          if (tpWinnerPos === 1 && hasTp1) bronzes.push(loser1);
+          else if (tpWinnerPos === 2 && hasTp2) bronzes.push(loser2);
+        } else {
+          if (loser1) bronzes.push(loser1);
+          if (loser2) bronzes.push(loser2);
+        }
       }
 
-      return { rounds: generatedRounds, champion: gold, gold, silver, bronzes };
+      return { rounds: generatedRounds, champion: gold, gold, silver, bronzes, semiLosers, thirdPlaceMatch };
     }
 
-    function getPlayerPreviousWinsHistory(cat, rounds, player, upToRoundIndex) {
+    function getPlayerPreviousWinsHistory(cat, rounds, player, upToRoundIndex, includeSemiLoss = false) {
       if (!player || player.isEmpty || upToRoundIndex <= 0) return [];
       const history = [];
       const totalRounds = rounds.length;
@@ -3413,6 +3537,7 @@
       for (let r = 0; r < upToRoundIndex; r++) {
         const rTitle = getRoundTitle(r, totalRounds);
         rounds[r].forEach((m) => {
+          if (m.isThirdPlace) return;
           const isP1 = m.p1 && !m.p1.isEmpty && m.p1.seed === player.seed;
           const isP2 = m.p2 && !m.p2.isEmpty && m.p2.seed === player.seed;
           if ((isP1 && m.winnerPos === 1) || (isP2 && m.winnerPos === 2)) {
@@ -3422,6 +3547,13 @@
             const matchNo = cat.matchNumbers?.[m.id] ? `Trận ${cat.matchNumbers[m.id]} - ` : "";
             const scoreStr = m.evalScore?.summaryText ? ` [${m.evalScore.blueWins}-${m.evalScore.redWins} | ${m.evalScore.summaryText}]` : "";
             history.push(`✔ ${matchNo}${rTitle}: Thắng ${oppName}${oppUnit}${scoreStr}`);
+          } else if (includeSemiLoss && r === totalRounds - 2 && ((isP1 && m.winnerPos === 2) || (isP2 && m.winnerPos === 1))) {
+            const opponent = isP1 ? m.p2 : m.p1;
+            const oppName = opponent && !opponent.isEmpty ? (opponent.name || opponent.unit || `VĐV #${opponent.seed}`) : "Đối thủ";
+            const oppUnit = opponent && !opponent.isEmpty && opponent.unit ? ` (${opponent.unit})` : "";
+            const matchNo = cat.matchNumbers?.[m.id] ? `Trận ${cat.matchNumbers[m.id]} - ` : "";
+            const scoreStr = m.evalScore?.summaryText ? ` [${m.evalScore.blueWins}-${m.evalScore.redWins} | ${m.evalScore.summaryText}]` : "";
+            history.push(`↳ ${matchNo}${rTitle}: Thua ${oppName}${oppUnit}${scoreStr} → Vào Tranh Hạng 3`);
           }
         });
       }
@@ -3551,10 +3683,12 @@
       activeModalMatch = { rIndex, mIndex, matchId: match.id };
       const editable = canEditCategory(current);
       const totalRounds = rounds.length;
-      const roundTitle = getRoundTitle(rIndex, totalRounds);
+      const roundTitle = match.isThirdPlace ? "Tranh Hạng 3" : getRoundTitle(rIndex, totalRounds);
       const scheduledNo = current.matchNumbers?.[match.id];
 
-      document.getElementById('mdMatchNumBadge').textContent = scheduledNo ? `TRẬN ${scheduledNo} (${current.court || 'Sân 1'})` : `${current.court || 'Sân 1'} - NHÁNH ${mIndex + 1}`;
+      document.getElementById('mdMatchNumBadge').textContent = scheduledNo
+        ? `TRẬN ${scheduledNo} (${current.court || 'Sân 1'})`
+        : (match.isThirdPlace ? `${current.court || 'Sân 1'} - TRANH HẠNG 3` : `${current.court || 'Sân 1'} - NHÁNH ${mIndex + 1}`);
       document.getElementById('mdRoundAndCategoryTitle').textContent = `${roundTitle} • ${current.title || 'Hạng cân'}`;
 
       renderFighterAndAvatarsInModal(current, match.p1, 'mdBlue');
@@ -3566,8 +3700,8 @@
         blueHistoryEl.innerHTML = `<div class="text-slate-400 italic">Trận mở màn (Vòng đầu tiên)</div>`;
         redHistoryEl.innerHTML = `<div class="text-slate-400 italic">Trận mở màn (Vòng đầu tiên)</div>`;
       } else {
-        const bHist = getPlayerPreviousWinsHistory(current, rounds, match.p1, rIndex);
-        const rHist = getPlayerPreviousWinsHistory(current, rounds, match.p2, rIndex);
+        const bHist = getPlayerPreviousWinsHistory(current, rounds, match.p1, rIndex, Boolean(match.isThirdPlace));
+        const rHist = getPlayerPreviousWinsHistory(current, rounds, match.p2, rIndex, Boolean(match.isThirdPlace));
         blueHistoryEl.innerHTML = bHist.length > 0
           ? bHist.map(item => `<div class="bg-blue-950/80 border border-blue-700/50 rounded-lg px-2.5 py-1.5 font-medium">${escapeHtml(item)}</div>`).join('')
           : `<div class="text-slate-400 italic">Chưa có lịch sử trận trước</div>`;
@@ -3879,6 +4013,26 @@
             line.setAttribute('stroke-width', '3');
             svg.appendChild(line);
           }
+
+          // Đường nối từ Trận Tranh Hạng 3 sang thẻ Huy Chương Đồng (Hạng 3)
+          const thirdPlaceBox = pairBoxes[1];
+          const thirdPlaceCard = container.querySelector('.third-place-card-box');
+          if (thirdPlaceBox && thirdPlaceCard) {
+            const rThird = thirdPlaceBox.getBoundingClientRect();
+            const rThirdCard = thirdPlaceCard.getBoundingClientRect();
+            const yThirdMid = ((rThird.top - cRect.top) + (rThird.height / 2)) / scale;
+            const xThirdStart = (rThird.right - cRect.left) / scale;
+            const xThirdEnd = (rThirdCard.left - cRect.left) / scale;
+
+            const lineThird = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            lineThird.setAttribute('x1', xThirdStart);
+            lineThird.setAttribute('y1', yThirdMid);
+            lineThird.setAttribute('x2', xThirdEnd);
+            lineThird.setAttribute('y2', yThirdMid);
+            lineThird.setAttribute('stroke', '#fb923c');
+            lineThird.setAttribute('stroke-width', '3');
+            svg.appendChild(lineThird);
+          }
         }
       });
 
@@ -3900,12 +4054,16 @@
 
       autoResizeTournamentNameInput();
 
-      const { rounds, champion } = calculateCategoryBracket(current);
+      const { rounds, champion, bronzes, thirdPlaceMatch } = calculateCategoryBracket(current);
       bracketContent.innerHTML = '';
       stickyRoundHeadersRow.innerHTML = '';
 
+      // Đảm bảo chiều cao tối thiểu khi ở Schema 4 để hiển thị trọn vẹn khung Tranh Hạng 3 / Đồng Hạng 3 bên dưới Chung kết
+      bracketContent.style.minHeight = current.size <= 4 ? '540px' : '';
+
       rounds.forEach((round, rIndex) => {
-        const roundTitle = getRoundTitle(rIndex, rounds.length);
+        const isLastCol = rIndex === rounds.length - 1;
+        const roundTitle = (isLastCol && current.hasThirdPlaceMatch) ? "Chung Kết & Hạng 3" : getRoundTitle(rIndex, rounds.length);
 
         const stickyHeaderEl = document.createElement('div');
         stickyHeaderEl.className = 'round-badge w-72 xl:w-80 h-8 shrink-0 flex items-center justify-center text-center text-xs font-extrabold text-slate-700 uppercase tracking-widest bg-slate-200 border border-slate-300/90 rounded-lg shadow-xs';
@@ -3916,15 +4074,23 @@
         roundCol.className = 'round-col-item flex flex-col justify-around w-72 xl:w-80 relative shrink-0 z-10';
 
         round.forEach((match, mIndex) => {
-          const isFinal = rIndex === rounds.length - 1;
+          const isThirdPlace = Boolean(match.isThirdPlace);
+          const isFinal = isLastCol && !isThirdPlace;
           const hasP1 = match.p1 && !match.p1.isEmpty;
           const hasP2 = match.p2 && !match.p2.isEmpty;
 
-          const p1Name = hasP1 ? (match.p1.name || `VĐV Số ${match.p1.seed}`) : (rIndex === 0 ? "Chưa có VĐV" : "Chờ kết quả...");
+          let emptyP1Label = rIndex === 0 ? "Chưa có VĐV" : "Chờ kết quả...";
+          let emptyP2Label = rIndex === 0 ? "Chưa có VĐV" : "Chờ kết quả...";
+          if (isThirdPlace) {
+            emptyP1Label = match.semi1NoLoserPossible ? "Không có VĐV (BK1 miễn đấu)" : "Chờ VĐV thua Bán kết 1...";
+            emptyP2Label = match.semi2NoLoserPossible ? "Không có VĐV (BK2 miễn đấu)" : "Chờ VĐV thua Bán kết 2...";
+          }
+
+          const p1Name = hasP1 ? (match.p1.name || `VĐV Số ${match.p1.seed}`) : emptyP1Label;
           const p1Unit = hasP1 ? (match.p1.unit || "---") : "---";
           const p1Seed = match.p1 && match.p1.seed ? match.p1.seed : "-";
 
-          const p2Name = hasP2 ? (match.p2.name || `VĐV Số ${match.p2.seed}`) : (rIndex === 0 ? "Chưa có VĐV" : "Chờ kết quả...");
+          const p2Name = hasP2 ? (match.p2.name || `VĐV Số ${match.p2.seed}`) : emptyP2Label;
           const p2Unit = hasP2 ? (match.p2.unit || "---") : "---";
           const p2Seed = match.p2 && match.p2.seed ? match.p2.seed : "-";
 
@@ -3935,16 +4101,32 @@
             : "";
 
           const matchWrapper = document.createElement('div');
-          matchWrapper.className = 'relative flex-1 flex flex-col justify-center py-2.5';
+          if (isThirdPlace) {
+            matchWrapper.className = 'w-full z-20';
+            matchWrapper.style.cssText = 'position: absolute; top: calc(50% + 92px); left: 0; right: 0;';
+          } else {
+            matchWrapper.className = 'relative flex-1 flex flex-col justify-center py-2.5';
+          }
+
+          const cardBorderClass = isThirdPlace
+            ? 'border-2 border-orange-300 hover:border-orange-500 ring-2 ring-orange-100/80'
+            : 'border border-slate-200 hover:border-blue-400';
+          const headerBgClass = isThirdPlace
+            ? 'bg-gradient-to-r from-amber-100 to-orange-100 text-orange-900 border-orange-200'
+            : 'bg-slate-100 text-slate-500 border-slate-200';
+          const headerTitleText = isThirdPlace
+            ? (match.isBye ? 'TRANH HẠNG 3 • MIỄN ĐẤU (BYE)' : '🥉 TRANH HẠNG 3 (2 TRẬN THUA BK)')
+            : (match.isBye ? 'MIỄN ĐẤU (BYE) • TỰ ĐỘNG VÀO VÒNG SAU' : `Nhánh ${mIndex + 1} • Xem chi tiết`);
 
           matchWrapper.innerHTML = `
-            <div class="match-card-box bg-white rounded-xl shadow-sm hover:shadow-md hover:border-blue-400 border border-slate-200 relative z-10 cursor-pointer transition-all">
-              <div class="bg-slate-100 px-3 py-1.5 text-[10px] font-bold text-slate-500 flex items-center justify-between uppercase border-b border-slate-200 rounded-t-xl">
-                <span>${match.isBye ? 'MIỄN ĐẤU (BYE) • TỰ ĐỘNG VÀO VÒNG SAU' : `Nhánh ${mIndex + 1} • Xem chi tiết`}</span>
+            <div class="match-card-box bg-white rounded-xl shadow-sm hover:shadow-md ${cardBorderClass} relative z-10 cursor-pointer transition-all">
+              <div class="${headerBgClass} px-3 py-1.5 text-[10px] font-bold flex items-center justify-between uppercase border-b rounded-t-xl">
+                <span>${headerTitleText}</span>
                 <div class="flex items-center gap-1.5">
                   ${roundsRatio ? `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-white font-black text-[10px]">${roundsRatio}</span>` : ''}
                   ${scheduledMatchNo ? `<span class="match-no-badge inline-flex items-center justify-center px-2 h-5 rounded bg-amber-500 text-slate-950 font-black text-[11px]">TRẬN ${scheduledMatchNo}</span>` : ''}
                   ${isFinal ? '<span class="text-orange-600 font-black">★ CK</span>' : ''}
+                  ${isThirdPlace ? '<span class="text-orange-700 font-black">🥉 H3</span>' : ''}
                 </div>
               </div>
 
@@ -3987,11 +4169,15 @@
             if (match.isBye) {
               const byePlayer = hasP1 ? match.p1 : match.p2;
               const byeName = byePlayer?.name || `VĐV số ${byePlayer?.seed || ''}`;
-              showToast(`${byeName} được miễn đấu vòng này và tự động vào vòng tiếp theo!`);
+              showToast(isThirdPlace
+                ? `${byeName} được miễn đấu trận Tranh Hạng 3 và tự động nhận Huy Chương Đồng!`
+                : `${byeName} được miễn đấu vòng này và tự động vào vòng tiếp theo!`);
               return;
             }
             if (!hasP1 || !hasP2) {
-              showToast('Nhánh đấu này chưa đủ VĐV để mở chi tiết trận!', 'error');
+              showToast(isThirdPlace
+                ? 'Trận Tranh Hạng 3 đang chờ kết quả 2 trận Bán kết!'
+                : 'Nhánh đấu này chưa đủ VĐV để mở chi tiết trận!', 'error');
               return;
             }
             openMatchDetailModal(rIndex, mIndex);
@@ -4005,7 +4191,7 @@
 
       const champStickyHeader = document.createElement('div');
       champStickyHeader.className = 'round-badge w-64 xl:w-72 h-8 shrink-0 flex items-center justify-center text-center text-xs font-black text-yellow-800 uppercase tracking-widest bg-yellow-300 border border-yellow-400 rounded-lg shadow-xs';
-      champStickyHeader.innerHTML = `<span>🏆 Nhà Vô Địch</span>`;
+      champStickyHeader.innerHTML = `<span>${current.hasThirdPlaceMatch ? '🏆 Vô Địch & Hạng 3' : '🏆 Vô Địch & Đồng Hạng 3'}</span>`;
       stickyRoundHeadersRow.appendChild(champStickyHeader);
 
       const champCol = document.createElement('div');
@@ -4013,14 +4199,53 @@
       const champName = champion && !champion.isEmpty ? (champion.name || `VĐV Số ${champion.seed}`) : "???";
       const champUnit = champion && !champion.isEmpty && champion.unit ? champion.unit : "Chờ kết quả Chung Kết";
 
+      let thirdPlaceCardHtml = '';
+      if (current.hasThirdPlaceMatch) {
+        const bronzeWinner = bronzes && bronzes.length > 0 ? bronzes[0] : null;
+        const bName = bronzeWinner && !bronzeWinner.isEmpty ? (bronzeWinner.name || `VĐV Số ${bronzeWinner.seed}`) : "???";
+        const bUnit = bronzeWinner && !bronzeWinner.isEmpty && bronzeWinner.unit
+          ? bronzeWinner.unit
+          : (thirdPlaceMatch && thirdPlaceMatch.semi1NoLoserPossible && thirdPlaceMatch.semi2NoLoserPossible
+              ? "Không có VĐV thua Bán kết"
+              : "Chờ kết quả Tranh Hạng 3");
+        thirdPlaceCardHtml = `
+          <div class="w-full z-20" style="position: absolute; top: calc(50% + 92px); left: 0; right: 0;">
+            <div class="third-place-card-box bg-gradient-to-br from-orange-50 via-amber-50/80 to-orange-100 rounded-2xl shadow-md border-2 border-orange-400 p-4 text-center z-10 relative">
+              <h3 class="text-[10px] font-black text-orange-800 uppercase tracking-widest mb-1">🥉 Hạng 3 (Thắng Tranh Hạng 3)</h3>
+              <div class="text-base xl:text-lg font-black text-slate-800 break-words leading-snug mt-1">${escapeHtml(bName)}</div>
+              <div class="text-xs font-bold text-orange-900 mt-1.5 border-t border-orange-300/70 pt-1.5 break-words">${escapeHtml(bUnit)}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        const bronzeItemsHtml = bronzes && bronzes.length > 0
+          ? bronzes.map((b, idx) => `
+              <div class="${idx > 0 ? 'mt-2 pt-2 border-t border-orange-200/80' : ''}">
+                <div class="text-xs xl:text-sm font-black text-slate-800 break-words leading-snug">${escapeHtml(b.name || `VĐV Số ${b.seed}`)}</div>
+                <div class="text-[11px] font-bold text-orange-800 break-words">${escapeHtml(b.unit || '---')}</div>
+              </div>
+            `).join('')
+          : `<div class="text-xs font-bold text-orange-800/80 py-2">Chờ kết quả 2 trận Bán Kết</div>`;
+
+        thirdPlaceCardHtml = `
+          <div class="w-full z-20" style="position: absolute; top: calc(50% + 92px); left: 0; right: 0;">
+            <div class="co-third-card-box bg-gradient-to-br from-orange-50/90 via-amber-50/60 to-orange-100/80 rounded-2xl shadow-sm border-2 border-dashed border-orange-300 p-3.5 text-center z-10 relative">
+              <h3 class="text-[10px] font-black text-orange-800 uppercase tracking-widest mb-1.5">🥉 Đồng Hạng 3 (2 HCĐ)</h3>
+              ${bronzeItemsHtml}
+            </div>
+          </div>
+        `;
+      }
+
       champCol.innerHTML = `
         <div class="relative flex-1 flex flex-col justify-center py-2">
           <div class="champion-card-box bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-100 rounded-2xl shadow-lg border-2 border-yellow-400 p-5 text-center z-10 relative">
-            <h3 class="text-[10px] font-black text-yellow-700 uppercase tracking-widest mb-1">Huy Chương Vàng</h3>
+            <h3 class="text-[10px] font-black text-yellow-700 uppercase tracking-widest mb-1">🥇 Huy Chương Vàng</h3>
             <div class="text-lg xl:text-xl font-black text-slate-800 break-words leading-snug mt-1">${escapeHtml(champName)}</div>
             <div class="text-xs font-bold text-amber-800 mt-2 border-t border-yellow-300/60 pt-2 break-words">${escapeHtml(champUnit)}</div>
           </div>
         </div>
+        ${thirdPlaceCardHtml}
       `;
       bracketContent.appendChild(champCol);
 
@@ -4118,6 +4343,9 @@
           if (rIndex >= 0 && rIndex < totalRounds) {
             const numMatches = cat.size / Math.pow(2, rIndex + 1);
             const matchesInRound = [];
+            if (stageFromFinal === 0 && cat.hasThirdPlaceMatch && cat.size >= 4) {
+              matchesInRound.push(`r${rIndex}-m1`);
+            }
             for (let m = 0; m < numMatches; m++) matchesInRound.push(`r${rIndex}-m${m}`);
             catQueues.push({ cat, matches: matchesInRound });
           }
@@ -4190,13 +4418,15 @@
         addMedalToUnit(silver, 'SILVER', cat.title);
         bronzes.forEach(b => addMedalToUnit(b, 'BRONZE', cat.title));
 
+        const bronzeModeTag = cat.hasThirdPlaceMatch ? "[Tranh Hạng 3] " : "[Đồng Hạng 3] ";
         categoryResults.push({
           stt: idx + 1,
           title: cat.title || `Hạng cân ${idx + 1}`,
           court: cat.court || "Sân 1",
+          hasThirdPlaceMatch: Boolean(cat.hasThirdPlaceMatch),
           gold: gold && !gold.isEmpty ? `${gold.name || 'VĐV'} (${gold.unit || '---'})` : "---",
           silver: silver && !silver.isEmpty ? `${silver.name || 'VĐV'} (${silver.unit || '---'})` : "---",
-          bronzes: bronzes.length > 0 ? bronzes.map(b => `${b.name || 'VĐV'} (${b.unit || '---'})`).join(" & ") : "---"
+          bronzes: bronzes.length > 0 ? `${bronzeModeTag}${bronzes.map(b => `${b.name || 'VĐV'} (${b.unit || '---'})`).join(" & ")}` : `${bronzeModeTag}---`
         });
       });
 
@@ -4266,7 +4496,7 @@
         "Sân": c.court,
         "Huy Chương Vàng": c.gold,
         "Huy Chương Bạc": c.silver,
-        "Đồng Huy Chương Đồng": c.bronzes
+        "Huy Chương Đồng / Hạng 3": c.bronzes
       }));
 
       const wb = XLSX.utils.book_new();
@@ -4645,6 +4875,7 @@
 
           const importMode = document.querySelector('input[name="importModeRadio"]:checked')?.value || 'merge';
           const autoDraw = document.getElementById('autoDrawOnImportCheckbox').checked;
+          const thirdPlaceOnImport = Boolean(document.getElementById('thirdPlaceOnImportCheckbox')?.checked);
 
           if (importMode === 'replace') {
             if (currentRole === 'admin') {
@@ -4755,11 +4986,13 @@
             if (!targetCat) {
               targetCat = createNewCategory(nextId++, grp.title, targetSize, grp.court, grp.compType);
               targetCat.tournamentName = tournamentTitle;
+              targetCat.hasThirdPlaceMatch = thirdPlaceOnImport;
               categories.push(targetCat);
             } else {
               targetCat.size = targetSize;
               targetCat.court = grp.court;
               targetCat.compType = grp.compType;
+              targetCat.hasThirdPlaceMatch = thirdPlaceOnImport;
               targetCat.winners = {};
               targetCat.matchScores = {};
             }
@@ -4995,7 +5228,7 @@
         });
 
         // Các nhãn thể thức/sân màu xanh lá và cam; tiêu đề vòng màu xám/vàng.
-        ['#bracketCompTypeBadge', '#bracketCourtBadge'].forEach(selector => {
+        ['#bracketCompTypeBadge', '#bracketCourtBadge', '#bracketThirdPlaceBadge'].forEach(selector => {
           const el = cloneHeader.querySelector(selector);
           centerBadge(el, 'inline-flex');
           if (el) el.style.height = '24px';
@@ -5130,8 +5363,8 @@
         const totalRounds = rounds.length;
 
         rounds.forEach((round, rIdx) => {
-          const rTitle = getRoundTitle(rIdx, totalRounds);
           round.forEach(match => {
+            const rTitle = match.isThirdPlace ? "Tranh Hạng 3" : getRoundTitle(rIdx, totalRounds);
             const matchNo = matchNumbers[match.id];
             if (!matchNo || match.isBye || match.winnerPos) return;
 
