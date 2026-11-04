@@ -202,14 +202,43 @@
       0%, 100% { outline-color: #f59e0b; }
       50% { outline-color: #0ea5e9; }
     }
-@media print {
+    #batchPrintContainer {
+      display: none;
+    }
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 7mm;
+      }
       body {
         height: auto !important;
         overflow: visible !important;
         background: white !important;
       }
-      #leftSidebar, #actionToolbar, #toastContainer, #categoryTabsBar, #courtStatusBoard, #topGlobalBar, #matchDetailModal, #athleteProfileModal, #excelModal, #authModal, #pinSettingModal, #scheduleModal, #scoreboardLinksModal, #viewerZoomTarget {
+      #leftSidebar, #actionToolbar, #toastContainer, #categoryTabsBar, #courtStatusBoard, #topGlobalBar, #matchDetailModal, #athleteProfileModal, #excelModal, #authModal, #pinSettingModal, #scheduleModal, #scoreboardLinksModal, #printSelectionModal, #viewerZoomTarget {
         display: none !important;
+      }
+      body.batch-printing-mode > *:not(#batchPrintContainer) {
+        display: none !important;
+      }
+      body.batch-printing-mode #batchPrintContainer {
+        display: block !important;
+        width: 100% !important;
+        background: white !important;
+      }
+      .print-sheet-page {
+        width: 100%;
+        background: white !important;
+        page-break-after: always;
+        break-after: page;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        box-sizing: border-box;
+        padding: 2px 0;
+      }
+      .print-sheet-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
       }
       #rightArea, #bracketWrapper, #bracketViewport, #exportArea, #summaryWrapper {
         height: auto !important;
@@ -234,6 +263,9 @@
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 h-screen overflow-hidden flex flex-col">
+
+  <!-- Vùng chứa tạm thời khi In hàng loạt các Sơ đồ đã chọn -->
+  <div id="batchPrintContainer"></div>
 
   <!-- Thông báo nổi (Toast) -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-[120] flex flex-col gap-2 pointer-events-none"></div>
@@ -906,6 +938,73 @@
         </div>
       </div>
 
+      <!-- MODAL CHỌN CÁC SƠ ĐỒ THI ĐẤU CẦN IN (DÀNH CHO ADMIN / THƯ KÝ) -->
+      <div id="printSelectionModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[95] flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 text-white shadow-2xl my-auto max-h-[92vh] flex flex-col">
+          <div class="flex justify-between items-center mb-3.5 border-b border-slate-800 pb-3 shrink-0">
+            <div>
+              <h3 class="text-base sm:text-lg font-black uppercase tracking-wider text-sky-400">🖨️ Chọn Các Sơ Đồ Thi Đấu Cần In</h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">Tích chọn những nội dung bạn muốn in ra giấy hoặc xuất PDF (Mỗi sơ đồ được in trên 1 trang riêng)</p>
+            </div>
+            <button id="closePrintModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer text-lg font-bold">✕</button>
+          </div>
+
+          <div class="space-y-3.5 flex-1 overflow-hidden flex flex-col">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 shrink-0">
+              <div class="sm:col-span-4">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Lọc theo Sân</label>
+                <select id="printModalCourtFilter" class="w-full bg-slate-800 border border-slate-700 text-amber-400 rounded-xl px-3 py-2 font-bold text-xs focus:outline-none focus:border-amber-500 cursor-pointer">
+                  <option value="ALL">Tất cả các sân</option>
+                  <option value="Sân 1">Sân 1</option>
+                  <option value="Sân 2">Sân 2</option>
+                  <option value="Sân 3">Sân 3</option>
+                  <option value="Sân 4">Sân 4</option>
+                  <option value="Sân 5">Sân 5</option>
+                  <option value="Sân 6">Sân 6</option>
+                </select>
+              </div>
+              <div class="sm:col-span-8">
+                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Tìm nhanh nội dung</label>
+                <input id="printModalSearchInput" type="text" placeholder="🔍 Nhập tên hạng cân, nội dung cần tìm..." class="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-sky-500 placeholder-slate-500" />
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 shrink-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <button id="printSelectAllBtn" type="button" class="py-1 px-2.5 rounded-lg bg-sky-600/20 hover:bg-sky-600 text-sky-300 hover:text-white border border-sky-500/40 text-[11px] font-extrabold transition-colors cursor-pointer">
+                  ✔ Chọn tất cả đang hiện
+                </button>
+                <button id="printSelectCurrentBtn" type="button" class="py-1 px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 border border-amber-500/40 text-[11px] font-extrabold transition-colors cursor-pointer">
+                  🎯 Chỉ chọn sơ đồ đang xem
+                </button>
+                <button id="printDeselectAllBtn" type="button" class="py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-bold transition-colors cursor-pointer">
+                  ✕ Bỏ chọn tất cả
+                </button>
+              </div>
+              <span id="printSelectedCountBadge" class="text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                Đã chọn: 1 sơ đồ
+              </span>
+            </div>
+
+            <div id="printCategoriesList" class="flex-1 min-h-[220px] max-h-72 overflow-y-auto custom-scrollbar bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 space-y-1.5"></div>
+
+            <label class="flex items-center gap-2 px-1 text-xs font-bold text-emerald-300 cursor-pointer select-none shrink-0">
+              <input type="checkbox" id="autoFitPrintPageCheckbox" checked class="w-4 h-4 accent-emerald-500 rounded cursor-pointer" />
+              <span>📐 Tự động thu phóng vừa khít 1 trang giấy ngang (A4 Landscape) cho từng sơ đồ</span>
+            </label>
+          </div>
+
+          <div class="flex items-center justify-end gap-2.5 pt-4 mt-3 border-t border-slate-800 shrink-0">
+            <button id="cancelPrintModalBtn" type="button" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl border border-slate-700 cursor-pointer">
+              Hủy
+            </button>
+            <button id="confirmPrintBracketsBtn" type="button" class="py-2.5 px-6 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs sm:text-sm uppercase rounded-xl shadow-lg flex items-center gap-2 cursor-pointer">
+              <span id="confirmPrintBracketsBtnText">🖨️ IN CÁC SƠ ĐỒ ĐÃ CHỌN</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- ================= THANH CHỌN NỘI DUNG DẠNG CỬA SỔ XỔ DỌC ================= -->
       <div id="categoryTabsRestorePoint" class="hidden" aria-hidden="true"></div>
       <div id="categoryTabsBar" class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0 z-40 relative">
@@ -946,6 +1045,9 @@
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
+          
+            
+          </button>
           <button id="openScoreboardLinksBtn" type="button" class="hidden py-1.5 px-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs items-center gap-1.5 shrink-0 shadow-md cursor-pointer">
             🔗 Kết Nối Bảng Điểm
           </button>
@@ -1026,7 +1128,7 @@
           <div id="toolbarExportSlot" class="flex flex-wrap items-center gap-2">
             <div id="bracketExportButtonsGroup" class="flex flex-wrap items-center gap-2">
             <button id="printBracketBtn" type="button" class="py-1.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer">
-              In Sơ Đồ
+              🖨️ In Sơ Đồ
             </button>
             <button id="saveImageBtn" class="py-1.5 px-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer">
               <span id="saveImageBtnText">Lưu Ảnh Rõ Nét</span>
@@ -2313,6 +2415,7 @@
         leftSidebar.classList.remove('flex');
       }
 
+      const openPrintModalTopBtn = document.getElementById('openPrintModalTopBtn');
       if (currentRole === 'admin' || currentRole.startsWith('Sân ')) {
         addCategoryBtn.classList.remove('hidden');
         addCategoryBtn.classList.add('flex');
@@ -2322,6 +2425,10 @@
         openScheduleModalBtn.classList.add('flex');
         openScoreboardLinksBtn.classList.remove('hidden');
         openScoreboardLinksBtn.classList.add('flex');
+        if (openPrintModalTopBtn) {
+          openPrintModalTopBtn.classList.remove('hidden');
+          openPrintModalTopBtn.classList.add('flex');
+        }
       } else {
         addCategoryBtn.classList.add('hidden');
         addCategoryBtn.classList.remove('flex');
@@ -2331,6 +2438,10 @@
         openScheduleModalBtn.classList.remove('flex');
         openScoreboardLinksBtn.classList.add('hidden');
         openScoreboardLinksBtn.classList.remove('flex');
+        if (openPrintModalTopBtn) {
+          openPrintModalTopBtn.classList.add('hidden');
+          openPrintModalTopBtn.classList.remove('flex');
+        }
       }
 
       const isSecretary = currentRole.startsWith('Sân ');
@@ -5388,7 +5499,329 @@
     });
 
 
-    document.getElementById('printBracketBtn').addEventListener('click', () => window.print());
+    // ================= CHỨC NĂNG CHỌN & IN HÀNG LOẠT SƠ ĐỒ THI ĐẤU (DÀNH CHO ADMIN / THƯ KÝ) =================
+    const printSelectionModal = document.getElementById('printSelectionModal');
+    const printModalCourtFilter = document.getElementById('printModalCourtFilter');
+    const printModalSearchInput = document.getElementById('printModalSearchInput');
+    const printCategoriesList = document.getElementById('printCategoriesList');
+    const printSelectedCountBadge = document.getElementById('printSelectedCountBadge');
+    const confirmPrintBracketsBtn = document.getElementById('confirmPrintBracketsBtn');
+    const confirmPrintBracketsBtnText = document.getElementById('confirmPrintBracketsBtnText');
+    const autoFitPrintPageCheckbox = document.getElementById('autoFitPrintPageCheckbox');
+    const batchPrintContainer = document.getElementById('batchPrintContainer');
+
+    let selectedPrintCategoryIds = new Set();
+
+    function getPrintableFilteredCategories() {
+      const courtFilterVal = printModalCourtFilter ? printModalCourtFilter.value : 'ALL';
+      const searchQ = normalizeMatchKey(printModalSearchInput ? printModalSearchInput.value : '');
+
+      return categories.filter(cat => {
+        if (!canEditCategory(cat)) return false;
+        if (courtFilterVal !== 'ALL' && (cat.court || 'Sân 1') !== courtFilterVal) return false;
+        if (searchQ) {
+          const prog = getCategoryProgressStatus(cat);
+          const hay = normalizeMatchKey(`${cat.title || ''} ${cat.court || ''} ${prog.text}`);
+          if (!hay.includes(searchQ)) return false;
+        }
+        return true;
+      });
+    }
+
+    function updatePrintSelectedCounterUI() {
+      const validSelected = categories.filter(c => selectedPrintCategoryIds.has(c.id) && c.isBracketVisible && canEditCategory(c));
+      const count = validSelected.length;
+      if (printSelectedCountBadge) {
+        printSelectedCountBadge.textContent = `Đã chọn: ${count} sơ đồ`;
+      }
+      if (confirmPrintBracketsBtnText) {
+        confirmPrintBracketsBtnText.textContent = count > 0
+          ? `🖨️ IN CÁC SƠ ĐỒ ĐÃ CHỌN (${count})`
+          : `🖨️ IN CÁC SƠ ĐỒ ĐÃ CHỌN`;
+      }
+      if (confirmPrintBracketsBtn) {
+        confirmPrintBracketsBtn.disabled = count === 0;
+        confirmPrintBracketsBtn.classList.toggle('opacity-50', count === 0);
+        confirmPrintBracketsBtn.classList.toggle('cursor-not-allowed', count === 0);
+      }
+    }
+
+    function renderPrintModalCategoriesList() {
+      if (!printCategoriesList) return;
+      printCategoriesList.innerHTML = '';
+
+      const filteredList = getPrintableFilteredCategories();
+      if (filteredList.length === 0) {
+        printCategoriesList.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">Không có nội dung nào phù hợp với bộ lọc hiện tại.</div>`;
+        updatePrintSelectedCounterUI();
+        return;
+      }
+
+      filteredList.forEach((cat, idx) => {
+        const isDrawn = Boolean(cat.isBracketVisible);
+        const isChecked = isDrawn && selectedPrintCategoryIds.has(cat.id);
+        const cfg = COMP_TYPE_CONFIG[cat.compType || 'single'] || COMP_TYPE_CONFIG.single;
+        const progress = getCategoryProgressStatus(cat);
+
+        const item = document.createElement('label');
+        item.className = `flex items-center justify-between gap-2 p-2.5 rounded-xl border text-xs transition-all ${
+          !isDrawn
+            ? 'bg-slate-900/40 border-slate-800/80 text-slate-500 opacity-60 cursor-not-allowed'
+            : (isChecked
+                ? 'bg-sky-950/60 border-sky-500/70 text-white cursor-pointer shadow-xs'
+                : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:bg-slate-800/80 cursor-pointer')
+        }`;
+
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <input
+              type="checkbox"
+              value="${cat.id}"
+              ${isChecked ? 'checked' : ''}
+              ${!isDrawn ? 'disabled' : ''}
+              class="print-cat-checkbox w-4 h-4 accent-sky-500 rounded shrink-0 cursor-pointer"
+            />
+            <span class="text-[11px] font-bold text-slate-400 w-5 shrink-0">${idx + 1}.</span>
+            <span class="font-bold truncate">${escapeHtml(cat.title || 'Hạng cân')}</span>
+            <span class="px-1.5 py-0.5 text-[10px] rounded border font-extrabold shrink-0 ${progress.badgeClass}">${escapeHtml(progress.text)}</span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${cat.hasThirdPlaceMatch ? `<span class="px-1.5 py-0.5 text-[9px] rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 font-black">🥉 Tranh H3</span>` : ''}
+            <span class="px-1.5 py-0.5 text-[10px] rounded bg-slate-800 text-slate-300 border border-slate-700 font-semibold">${escapeHtml(cfg.label)} • ${cat.size} nhánh</span>
+            <span class="px-2 py-0.5 text-[10px] rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-extrabold">${escapeHtml(cat.court || 'Sân 1')}</span>
+          </div>
+        `;
+
+        const checkbox = item.querySelector('.print-cat-checkbox');
+        if (checkbox && isDrawn) {
+          checkbox.addEventListener('change', (e) => {
+            const cId = Number(e.target.value);
+            if (e.target.checked) selectedPrintCategoryIds.add(cId);
+            else selectedPrintCategoryIds.delete(cId);
+            renderPrintModalCategoriesList();
+          });
+        }
+
+        printCategoriesList.appendChild(item);
+      });
+
+      updatePrintSelectedCounterUI();
+    }
+
+    function openPrintSelectionModal() {
+      if (currentRole === 'viewer') return;
+      const current = getActiveCategory();
+
+      if (currentRole.startsWith('Sân ')) {
+        printModalCourtFilter.value = currentRole;
+        printModalCourtFilter.disabled = true;
+      } else {
+        printModalCourtFilter.value = 'ALL';
+        printModalCourtFilter.disabled = false;
+      }
+      if (printModalSearchInput) printModalSearchInput.value = '';
+
+      selectedPrintCategoryIds.clear();
+      if (current && current.isBracketVisible && canEditCategory(current)) {
+        selectedPrintCategoryIds.add(current.id);
+      } else {
+        categories.forEach(c => {
+          if (c.isBracketVisible && canEditCategory(c)) selectedPrintCategoryIds.add(c.id);
+        });
+      }
+
+      renderPrintModalCategoriesList();
+      printSelectionModal.classList.remove('hidden');
+    }
+
+    function closePrintSelectionModal() {
+      printSelectionModal.classList.add('hidden');
+    }
+
+    document.getElementById('printBracketBtn').addEventListener('click', openPrintSelectionModal);
+    const openPrintModalTopBtnEl = document.getElementById('openPrintModalTopBtn');
+    if (openPrintModalTopBtnEl) {
+      openPrintModalTopBtnEl.addEventListener('click', openPrintSelectionModal);
+    }
+    document.getElementById('closePrintModalBtn').addEventListener('click', closePrintSelectionModal);
+    document.getElementById('cancelPrintModalBtn').addEventListener('click', closePrintSelectionModal);
+    printSelectionModal.addEventListener('click', (e) => {
+      if (e.target === printSelectionModal) closePrintSelectionModal();
+    });
+
+    printModalCourtFilter.addEventListener('change', renderPrintModalCategoriesList);
+    printModalSearchInput.addEventListener('input', renderPrintModalCategoriesList);
+
+    document.getElementById('printSelectAllBtn').addEventListener('click', () => {
+      const visible = getPrintableFilteredCategories();
+      visible.forEach(cat => {
+        if (cat.isBracketVisible) selectedPrintCategoryIds.add(cat.id);
+      });
+      renderPrintModalCategoriesList();
+    });
+
+    document.getElementById('printSelectCurrentBtn').addEventListener('click', () => {
+      selectedPrintCategoryIds.clear();
+      const current = getActiveCategory();
+      if (current && current.isBracketVisible && canEditCategory(current)) {
+        selectedPrintCategoryIds.add(current.id);
+      } else {
+        showToast('Sơ đồ hiện tại chưa bốc thăm!', 'error');
+      }
+      renderPrintModalCategoriesList();
+    });
+
+    document.getElementById('printDeselectAllBtn').addEventListener('click', () => {
+      selectedPrintCategoryIds.clear();
+      renderPrintModalCategoriesList();
+    });
+
+    function buildPrintableBracketPageElement(cat, autoFitPage) {
+      const pageSection = document.createElement('section');
+      pageSection.className = 'print-sheet-page flex flex-col items-center justify-start bg-white';
+
+      // 1. Sao chép phần Header Giải đấu & Tên nội dung
+      const cloneHeader = fixedTournamentHeaderBar.cloneNode(true);
+      cloneHeader.removeAttribute('id');
+      const clonedViewerZoom = cloneHeader.querySelector('#viewerZoomTarget');
+      if (clonedViewerZoom) clonedViewerZoom.remove();
+
+      const clonedInput = cloneHeader.querySelector('#tournamentNameInput');
+      if (clonedInput) {
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'text-xl sm:text-2xl font-black text-slate-900 uppercase text-center py-0.5 px-3 whitespace-nowrap';
+        titleDiv.style.lineHeight = '1.35';
+        titleDiv.textContent = cat.tournamentName || 'SƠ ĐỒ THI ĐẤU';
+        clonedInput.parentNode.replaceChild(titleDiv, clonedInput);
+      }
+      cloneHeader.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      cloneHeader.style.background = '#ffffff';
+      cloneHeader.style.borderBottom = '1px solid #e2e8f0';
+      cloneHeader.style.marginBottom = '10px';
+      cloneHeader.style.width = '100%';
+      cloneHeader.style.overflow = 'visible';
+
+      // 2. Đo kích thước gốc của sơ đồ khi đang ở tỉ lệ 100% (scale = 1.0)
+      const naturalW = bracketContent.scrollWidth || 800;
+      const stageMinH = parseFloat(zoomStage.style.minHeight) || 400;
+      const naturalH = Math.max(bracketContent.scrollHeight || 400, stageMinH);
+
+      // 3. Sao chép vùng Sơ đồ (#exportArea) đã có sẵn đường nối SVG chuẩn xác
+      const cloneArea = exportArea.cloneNode(true);
+      const clonedZoomStage = cloneArea.querySelector('#zoomStage');
+      const clonedZoomWrap = cloneArea.querySelector('#zoomStageWrapper');
+      const clonedStickyRow = cloneArea.querySelector('#stickyRoundHeadersRow');
+      const clonedStickyWrap = cloneArea.querySelector('#stickyRoundHeadersWrap');
+
+      // Xóa toàn bộ id trùng lặp để quy tắc CSS @media print (#zoomStage { transform: none !important }) không ghi đè tỉ lệ thu phóng
+      cloneArea.removeAttribute('id');
+      cloneArea.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      cloneArea.style.background = '#ffffff';
+
+      if (clonedStickyWrap) {
+        clonedStickyWrap.style.position = 'static';
+        clonedStickyWrap.style.background = '#ffffff';
+      }
+
+      // Tính tỉ lệ thu phóng vừa khít khổ giấy A4 Ngang (khoảng 1020px x 585px cho phần sơ đồ)
+      let printScale = 1.0;
+      if (autoFitPage) {
+        const maxPageW = 1020;
+        const maxPageH = 585;
+        printScale = Math.min(1.0, maxPageW / naturalW, maxPageH / (46 + naturalH));
+      }
+
+      const scaledW = Math.round(naturalW * printScale);
+      const scaledH = Math.round(naturalH * printScale);
+      const scaledHeaderH = Math.round(46 * printScale);
+
+      if (clonedStickyRow) {
+        clonedStickyRow.style.transformOrigin = 'top left';
+        clonedStickyRow.style.transform = `scale(${printScale})`;
+      }
+      if (clonedStickyWrap) {
+        clonedStickyWrap.style.width = `${scaledW}px`;
+        clonedStickyWrap.style.height = `${scaledHeaderH}px`;
+      }
+      if (clonedZoomStage) {
+        clonedZoomStage.style.transformOrigin = 'top left';
+        clonedZoomStage.style.transform = `scale(${printScale})`;
+      }
+      if (clonedZoomWrap) {
+        clonedZoomWrap.style.width = `${scaledW}px`;
+        clonedZoomWrap.style.height = `${scaledH}px`;
+      }
+
+      cloneArea.style.minWidth = `${scaledW}px`;
+      cloneArea.style.width = `${scaledW}px`;
+      cloneArea.style.margin = '0 auto';
+
+      pageSection.appendChild(cloneHeader);
+      pageSection.appendChild(cloneArea);
+      return pageSection;
+    }
+
+    function cleanupBatchPrintMode() {
+      document.body.classList.remove('batch-printing-mode');
+      if (batchPrintContainer) batchPrintContainer.innerHTML = '';
+    }
+
+    window.addEventListener('afterprint', cleanupBatchPrintMode);
+
+    confirmPrintBracketsBtn.addEventListener('click', async () => {
+      const catsToPrint = categories.filter(c => selectedPrintCategoryIds.has(c.id) && c.isBracketVisible && canEditCategory(c));
+      if (catsToPrint.length === 0) {
+        showToast('Vui lòng tích chọn ít nhất 1 sơ đồ đã bốc thăm để in!', 'error');
+        return;
+      }
+
+      const autoFitPage = Boolean(autoFitPrintPageCheckbox?.checked);
+      const prevActiveId = activeCategoryId;
+      const prevSummaryView = isSummaryView;
+      const prevZoom = currentZoomScale;
+
+      confirmPrintBracketsBtn.disabled = true;
+      confirmPrintBracketsBtnText.textContent = `⏳ ĐANG CHUẨN BỊ ${catsToPrint.length} SƠ ĐỒ...`;
+
+      try {
+        batchPrintContainer.innerHTML = '';
+        isSummaryView = false;
+
+        for (const cat of catsToPrint) {
+          activeCategoryId = cat.id;
+          currentZoomScale = 1.0;
+          syncUIFromActiveCategory();
+          applyZoomScale(1.0);
+          // Chờ trình duyệt render xong layout và đường nối SVG của từng sơ đồ
+          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+          updateBracketConnectorLines();
+
+          const sheetEl = buildPrintableBracketPageElement(cat, autoFitPage);
+          batchPrintContainer.appendChild(sheetEl);
+        }
+
+        // Khôi phục lại màn hình đang làm việc trước đó
+        activeCategoryId = prevActiveId;
+        isSummaryView = prevSummaryView;
+        syncUIFromActiveCategory();
+        if (!prevSummaryView) {
+          applyZoomScale(prevZoom);
+        }
+
+        closePrintSelectionModal();
+        document.body.classList.add('batch-printing-mode');
+
+        await new Promise(r => setTimeout(r, 120));
+        window.print();
+      } catch (err) {
+        console.error(err);
+        cleanupBatchPrintMode();
+        showToast('Có lỗi xảy ra khi chuẩn bị trang in!', 'error');
+      } finally {
+        confirmPrintBracketsBtn.disabled = false;
+        updatePrintSelectedCounterUI();
+      }
+    });
 
     function escapeHtml(str) {
       if (!str) return "";
@@ -5704,6 +6137,836 @@
     document.getElementById('confirmLoginBtn').addEventListener('click', () => {
       setTimeout(() => attachListenersForAllScoreboards(), 300);
     });
+// =========================================================================
+    // BẢN NÂNG CẤP:
+    // 1. XÁC NHẬN TRƯỚC KHI XÓA / LÀM MỚI NỘI DUNG
+    // 2. BẢO MẬT THU HỒI QUYỀN TRUY CẬP REALTIME KHI ĐỔI MÃ PIN THƯ KÝ / ADMIN
+    // 3. HỆ THỐNG SAO LƯU (FILE .JSON + CLOUD + AUTO-BACKUP) & KHÔI PHỤC DỮ LIỆU
+    // =========================================================================
+
+    const pinVersionsRef = tournamentRef.child('pinVersions');
+    const cloudBackupsRef = db.ref('viho_tournament_backups_v1');
+    const LOCAL_AUTO_BACKUPS_KEY = 'viho_auto_backups_v1';
+
+    let systemPinVersions = {
+      admin: 1,
+      "Sân 1": 1,
+      "Sân 2": 1,
+      "Sân 3": 1,
+      "Sân 4": 1,
+      "Sân 5": 1,
+      "Sân 6": 1
+    };
+
+    let pendingConfirmDeleteCatId = null;
+    let securityListenersAttached = false;
+
+    // 1. Khởi tạo giao diện các Nút bấm & Modal (Xác nhận xóa + Sao lưu dữ liệu)
+    function injectSecurityAndBackupUI() {
+      // Thêm CSS ẩn các modal mới khi in
+      const printStyle = document.createElement('style');
+      printStyle.textContent = `
+        @media print {
+          #confirmDeleteCatModal, #backupModal, #openBackupModalBtn, #quickBackupBarBtn {
+            display: none !important;
+          }
+        }
+      `;
+      document.head.appendChild(printStyle);
+
+      // Chèn nút "💾 Sao Lưu / Khôi Phục" lên thanh Top Bar (cạnh nút Cài Đặt PIN)
+      const openPinBtn = document.getElementById('openPinSettingBtn');
+      if (openPinBtn && !document.getElementById('openBackupModalBtn')) {
+        const backupTopBtn = document.createElement('button');
+        backupTopBtn.id = 'openBackupModalBtn';
+        backupTopBtn.type = 'button';
+        backupTopBtn.className = 'hidden py-1.5 px-3 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs items-center gap-1.5 shadow transition-all cursor-pointer';
+        backupTopBtn.title = 'Tạo bản sao lưu tránh mất dữ liệu hoặc khôi phục dữ liệu';
+        backupTopBtn.innerHTML = '<span>💾 Sao Lưu / Khôi Phục</span>';
+        openPinBtn.parentNode.insertBefore(backupTopBtn, openPinBtn);
+      }
+
+      // Chèn nút "💾 Tạo Bản Sao Lưu" nhanh trên thanh công cụ Nội dung
+      const openPrintTopBtn = document.getElementById('openPrintModalTopBtn');
+      if (openPrintTopBtn && !document.getElementById('quickBackupBarBtn')) {
+        const quickBackupBtn = document.createElement('button');
+        quickBackupBtn.id = 'quickBackupBarBtn';
+        quickBackupBtn.type = 'button';
+        quickBackupBtn.className = 'hidden py-1.5 px-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-black text-xs items-center gap-1.5 shrink-0 shadow-md cursor-pointer';
+        quickBackupBtn.title = 'Tạo và tải ngay bản sao lưu toàn giải về máy';
+        quickBackupBtn.innerHTML = '💾 Tạo Bản Sao Lưu';
+        openPrintTopBtn.parentNode.insertBefore(quickBackupBtn, openPrintTopBtn);
+      }
+
+      // Chèn Modal Xác nhận Xóa / Làm mới mục này & Modal Quản lý Sao lưu
+      const modalsWrapper = document.createElement('div');
+      modalsWrapper.innerHTML = `
+        <!-- MODAL XÁC NHẬN XÓA / LÀM MỚI NỘI DUNG -->
+        <div id="confirmDeleteCatModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[115] flex items-center justify-center p-4">
+          <div class="bg-slate-900 border-2 border-red-500/60 rounded-2xl max-w-md w-full p-6 text-white shadow-2xl">
+            <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center text-red-400 text-lg font-black">⚠️</span>
+                <h3 id="confirmDeleteModalTitle" class="text-base font-black uppercase tracking-wider text-red-400">
+                  Xác Nhận Xóa / Làm Mới
+                </h3>
+              </div>
+              <button id="closeConfirmDeleteModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">✕</button>
+            </div>
+
+            <div id="confirmDeleteModalBody" class="space-y-3 text-xs sm:text-sm text-slate-200 leading-relaxed"></div>
+
+            <div class="mt-4 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-emerald-400 font-semibold flex items-center gap-2">
+              <span>🛡️</span>
+              <span>Hệ thống sẽ tự động lưu 1 bản sao lưu dự phòng trước khi thực hiện thao tác này.</span>
+            </div>
+
+            <div class="mt-5 flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+              <button id="cancelConfirmDeleteBtn" type="button" class="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 cursor-pointer">
+                Hủy Bỏ (Không Xóa)
+              </button>
+              <button id="executeConfirmDeleteBtn" type="button" class="py-2.5 px-5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs uppercase shadow-lg cursor-pointer">
+                Xác Nhận Thực Hiện
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL SAO LƯU & KHÔI PHỤC DỮ LIỆU -->
+        <div id="backupModal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[110] flex items-center justify-center p-4 overflow-y-auto">
+          <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 text-white shadow-2xl my-auto max-h-[92vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-3 shrink-0">
+              <div>
+                <h3 class="text-base sm:text-lg font-black uppercase tracking-wider text-teal-400">💾 Sao Lưu & Khôi Phục Dữ Liệu Giải Đấu</h3>
+                <p class="text-[11px] text-slate-400 mt-0.5">Bảo vệ an toàn 100% danh sách VĐV, nhánh bốc thăm, tỉ số trận đấu và kết quả toàn giải</p>
+              </div>
+              <button id="closeBackupModalBtn" type="button" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer text-lg font-bold">✕</button>
+            </div>
+
+            <div class="space-y-4 overflow-y-auto custom-scrollbar pr-1 flex-1">
+              <!-- Mục 1: Tải file Sao lưu (.JSON) về máy tính -->
+              <div class="p-4 rounded-xl bg-slate-800/90 border border-teal-500/40 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div class="text-sm font-black text-teal-300">1. Tải File Sao Lưu Toàn Giải Về Máy Tính (.JSON)</div>
+                    <div class="text-xs text-slate-300 mt-1">
+                      Lưu toàn bộ hạng cân, kết quả, số trận, liên kết bảng điểm và hình ảnh thành 1 file trên máy tính của bạn.
+                    </div>
+                  </div>
+                  <button id="downloadBackupJsonBtn" type="button" class="py-2.5 px-4 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shrink-0 cursor-pointer">
+                    ⬇ TẢI FILE SAO LƯU (.JSON)
+                  </button>
+                </div>
+                <label class="flex items-center gap-2 text-xs font-bold text-slate-300 cursor-pointer select-none">
+                  <input type="checkbox" id="includeAvatarsInBackupCheckbox" checked class="w-4 h-4 accent-teal-500 rounded cursor-pointer" />
+                  <span>Đính kèm toàn bộ Ảnh VĐV & Logo giải đấu vào file sao lưu</span>
+                </label>
+              </div>
+
+              <!-- Mục 2: Tạo bản sao lưu nhanh trên Hệ thống (Cloud + Trình duyệt) -->
+              <div class="p-4 rounded-xl bg-slate-800/70 border border-slate-700 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div class="text-sm font-black text-amber-400">2. Điểm Sao Lưu Nhanh Trên Hệ Thống (Cloud & Bộ Nhớ Máy)</div>
+                    <div class="text-[11px] text-slate-400">Tạo mốc sao lưu tức thì để khôi phục lại ngay với 1 cú nhấp chuột khi cần.</div>
+                  </div>
+                  <button id="createSnapshotBtn" type="button" class="py-2 px-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs rounded-xl shadow shrink-0 cursor-pointer">
+                    + Tạo Bản Sao Lưu Ngay
+                  </button>
+                </div>
+                <div id="snapshotsListContainer" class="max-h-52 overflow-y-auto custom-scrollbar space-y-2 bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                  <div class="text-xs text-slate-500 text-center py-3">Đang tải danh sách bản sao lưu...</div>
+                </div>
+              </div>
+
+              <!-- Mục 3: Khôi phục từ file (.JSON) trên máy tính -->
+              <div class="p-4 rounded-xl bg-slate-800/50 border-2 border-dashed border-sky-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div class="text-sm font-black text-sky-400">3. Khôi Phục Dữ Liệu Từ File Sao Lưu (.JSON)</div>
+                  <div class="text-xs text-slate-300 mt-0.5">Chọn file <code class="text-amber-300">.json</code> đã tải về máy tính trước đó để khôi phục lại toàn bộ giải đấu.</div>
+                </div>
+                <input type="file" id="restoreBackupFileInput" accept=".json" class="hidden" />
+                <button id="triggerRestoreFileBtn" type="button" class="py-2.5 px-4 bg-sky-600 hover:bg-sky-500 text-white font-black text-xs rounded-xl shadow-lg shrink-0 cursor-pointer">
+                  📂 Chọn File Để Khôi Phục
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modalsWrapper);
+    }
+
+    injectSecurityAndBackupUI();
+
+    // 2. Cập nhật ẩn/hiện nút Sao lưu theo quyền đăng nhập
+    const originalApplyRolePermissionsUI = applyRolePermissionsUI;
+    applyRolePermissionsUI = function() {
+      originalApplyRolePermissionsUI();
+      const openBackupModalBtn = document.getElementById('openBackupModalBtn');
+      const quickBackupBarBtn = document.getElementById('quickBackupBarBtn');
+      const isAuthorizedUser = (currentRole === 'admin' || currentRole.startsWith('Sân '));
+      if (openBackupModalBtn) {
+        openBackupModalBtn.classList.toggle('hidden', !isAuthorizedUser);
+        openBackupModalBtn.classList.toggle('flex', isAuthorizedUser);
+      }
+      if (quickBackupBarBtn) {
+        quickBackupBarBtn.classList.toggle('hidden', !isAuthorizedUser);
+        quickBackupBarBtn.classList.toggle('flex', isAuthorizedUser);
+      }
+    };
+
+    // =========================================================================
+    // YÊU CẦU 1: HỎI XÁC NHẬN TRƯỚC KHI "XÓA / LÀM MỚI MỤC NÀY"
+    // =========================================================================
+    const confirmDeleteCatModal = document.getElementById('confirmDeleteCatModal');
+    const confirmDeleteModalTitle = document.getElementById('confirmDeleteModalTitle');
+    const confirmDeleteModalBody = document.getElementById('confirmDeleteModalBody');
+
+    function closeConfirmDeleteModal() {
+      pendingConfirmDeleteCatId = null;
+      if (confirmDeleteCatModal) confirmDeleteCatModal.classList.add('hidden');
+    }
+
+    document.getElementById('closeConfirmDeleteModalBtn').addEventListener('click', closeConfirmDeleteModal);
+    document.getElementById('cancelConfirmDeleteBtn').addEventListener('click', closeConfirmDeleteModal);
+    confirmDeleteCatModal.addEventListener('click', (e) => {
+      if (e.target === confirmDeleteCatModal) closeConfirmDeleteModal();
+    });
+
+    // Giữ lại hàm xóa/làm mới gốc và bọc bằng hộp thoại xác nhận
+    const executeImmediateDeleteOrResetCategory = deleteOrResetCategoryById;
+
+    deleteOrResetCategoryById = function(targetCatId) {
+      const targetCat = categories.find(c => c.id === targetCatId);
+      if (!targetCat || !canEditCategory(targetCat)) return;
+
+      pendingConfirmDeleteCatId = targetCatId;
+      const visibleCats = getVisibleCategories();
+      const entrantCount = (targetCat.participants || []).filter(isRealDrawParticipant).length;
+      const finishedMatchesCount = Object.keys(targetCat.winners || {}).length;
+
+      if (visibleCats.length > 1) {
+        confirmDeleteModalTitle.textContent = 'Xác Nhận Xóa Nội Dung';
+        confirmDeleteModalBody.innerHTML = `
+          <p>Bạn có chắc chắn muốn <strong class="text-red-400 uppercase">xóa vĩnh viễn</strong> nội dung này không?</p>
+          <div class="p-3 rounded-xl bg-slate-800 border border-slate-700 space-y-1 text-xs">
+            <div>• Nội dung: <strong class="text-amber-300">${escapeHtml(targetCat.title || 'Hạng cân')}</strong></div>
+            <div>• Sân thi đấu: <strong class="text-white">${escapeHtml(targetCat.court || 'Sân 1')}</strong></div>
+            <div>• Dữ liệu hiện có: <strong class="text-emerald-300">${entrantCount} VĐV/Đội</strong> • <strong class="text-sky-300">${finishedMatchesCount} trận đã có kết quả</strong></div>
+          </div>
+          <p class="text-[11px] text-slate-400">Lưu ý: Nếu bấm xác nhận, mục này sẽ bị xóa khỏi danh sách thi đấu.</p>
+        `;
+      } else {
+        confirmDeleteModalTitle.textContent = 'Xác Nhận Làm Mới (Xóa Trắng)';
+        confirmDeleteModalBody.innerHTML = `
+          <p>Đây là nội dung cuối cùng đang hiển thị. Bạn có chắc chắn muốn <strong class="text-orange-400 uppercase">làm mới (xóa trắng toàn bộ thông tin)</strong> để nhập lại từ đầu không?</p>
+          <div class="p-3 rounded-xl bg-slate-800 border border-slate-700 space-y-1 text-xs">
+            <div>• Nội dung: <strong class="text-amber-300">${escapeHtml(targetCat.title || 'Hạng cân')}</strong></div>
+            <div>• Sân thi đấu: <strong class="text-white">${escapeHtml(targetCat.court || 'Sân 1')}</strong></div>
+            <div>• Dữ liệu sẽ bị xóa trắng: <strong class="text-emerald-300">${entrantCount} VĐV/Đội</strong> • <strong class="text-sky-300">${finishedMatchesCount} trận đã có kết quả</strong></div>
+          </div>
+        `;
+      }
+
+      confirmDeleteCatModal.classList.remove('hidden');
+    };
+
+    document.getElementById('executeConfirmDeleteBtn').addEventListener('click', () => {
+      if (pendingConfirmDeleteCatId === null) return;
+      const targetId = pendingConfirmDeleteCatId;
+      const targetCat = categories.find(c => c.id === targetId);
+      closeConfirmDeleteModal();
+
+      // Tự động tạo bản sao lưu dự phòng trước khi xóa/làm mới
+      createLocalAutoBackupSnapshot(`Tự động sao lưu trước khi xóa/làm mới "${targetCat?.title || 'Hạng cân'}"`);
+      executeImmediateDeleteOrResetCategory(targetId);
+    });
+
+    // =========================================================================
+    // YÊU CẦU 2: BẢO MẬT THU HỒI QUYỀN TRUY CẬP KHI ĐỔI MÃ PIN THƯ KÝ / ADMIN
+    // =========================================================================
+    function isCurrentSessionAuthorized() {
+      if (currentRole === 'viewer') return true;
+      const savedRole = sessionStorage.getItem('viho_role');
+      const savedPin = sessionStorage.getItem('viho_auth_pin');
+      const savedVer = sessionStorage.getItem('viho_auth_version');
+
+      const expectedPin = String(systemPins[currentRole] ?? '');
+      const expectedVer = String(systemPinVersions[currentRole] ?? 1);
+
+      // Nếu máy đăng nhập từ phiên cũ chưa có savedPin, hoặc mã PIN đã đổi, hoặc phiên bản bị thu hồi -> Từ chối
+      if (!savedRole || savedRole !== currentRole) return false;
+      if (!savedPin || savedPin !== expectedPin) return false;
+      if (savedVer && savedVer !== expectedVer) return false;
+      return true;
+    }
+
+    function revokeActiveSession(reasonMessage) {
+      if (currentRole === 'viewer') return;
+      const oldRole = currentRole;
+
+      // Hủy ngay lập tức các lệnh lưu đang chờ để máy bị thu hồi không thể ghi đè dữ liệu
+      Object.keys(pendingCatSaves).forEach(k => clearTimeout(pendingCatSaves[k]));
+
+      currentRole = 'viewer';
+      publicFilterCourt = 'ALL';
+      sessionStorage.setItem('viho_role', 'viewer');
+      sessionStorage.removeItem('viho_auth_pin');
+      sessionStorage.removeItem('viho_auth_version');
+
+      const courtFilter = document.getElementById('publicCourtFilter');
+      if (courtFilter) {
+        courtFilter.value = 'ALL';
+        courtFilter.disabled = false;
+      }
+
+      // Đóng toàn bộ các cửa sổ thao tác của Thư ký / Admin
+      [
+        'athleteProfileModal', 'matchDetailModal', 'excelModal',
+        'scheduleModal', 'scoreboardLinksModal', 'pinSettingModal',
+        'printSelectionModal', 'confirmDeleteCatModal', 'backupModal'
+      ].forEach(modalId => {
+        const el = document.getElementById(modalId);
+        if (el) el.classList.add('hidden');
+      });
+
+      if (securityListenersAttached) {
+        pinsRef.off();
+        pinVersionsRef.off();
+        securityListenersAttached = false;
+      }
+
+      attachListenersForAllScoreboards();
+      configureConnectionByRole(false);
+      syncUIFromActiveCategory();
+
+      showToast(
+        reasonMessage || `🔒 Mã PIN của quyền "${oldRole}" đã được thay đổi! Hệ thống đã thu hồi quyền truy cập trên máy này.`,
+        'error'
+      );
+    }
+
+    function verifySessionAgainstServerPins() {
+      if (currentRole === 'viewer') return;
+      if (!isCurrentSessionAuthorized()) {
+        revokeActiveSession(`🔒 Mật khẩu (PIN) của "${currentRole}" đã thay đổi hoặc bị thu hồi! Vui lòng đăng nhập lại.`);
+      }
+    }
+
+    function attachRealtimePinSecurityListeners() {
+      if (currentRole === 'viewer' || securityListenersAttached) return;
+      securityListenersAttached = true;
+
+      pinsRef.on('value', (snap) => {
+        const val = snap.val();
+        if (val) {
+          systemPins = { ...systemPins, ...val };
+          verifySessionAgainstServerPins();
+        }
+      });
+
+      pinVersionsRef.on('value', (snap) => {
+        const val = snap.val();
+        if (val) {
+          systemPinVersions = { ...systemPinVersions, ...val };
+          verifySessionAgainstServerPins();
+        }
+      });
+    }
+
+    // Bọc các hàm ghi dữ liệu lên Firebase: Kiểm tra quyền hợp lệ trước khi cho phép ghi
+    const origSaveMatchResult = saveMatchResultAndScoreToFirebase;
+    saveMatchResultAndScoreToFirebase = function(cat, matchId, winnerPos, scoreObj) {
+      if (currentRole !== 'viewer' && !isCurrentSessionAuthorized()) {
+        revokeActiveSession();
+        return;
+      }
+      return origSaveMatchResult(cat, matchId, winnerPos, scoreObj);
+    };
+
+    const origSaveOneCategory = saveOneCategoryToFirebase;
+    saveOneCategoryToFirebase = function(cat, immediate = false) {
+      if (currentRole !== 'viewer' && !isCurrentSessionAuthorized()) {
+        revokeActiveSession();
+        return;
+      }
+      return origSaveOneCategory(cat, immediate);
+    };
+
+    const origSaveAllCategories = saveAllCategoriesToFirebase;
+    saveAllCategoriesToFirebase = function() {
+      if (currentRole !== 'viewer' && !isCurrentSessionAuthorized()) {
+        revokeActiveSession();
+        return;
+      }
+      return origSaveAllCategories();
+    };
+
+    // Bọc hàm configureConnectionByRole để luôn gắn listener bảo mật PIN khi ở chế độ Thư ký / Admin
+    const origConfigureConnectionByRole = configureConnectionByRole;
+    configureConnectionByRole = function(showNotification = false) {
+      if (currentRole === 'viewer' && securityListenersAttached) {
+        pinsRef.off();
+        pinVersionsRef.off();
+        securityListenersAttached = false;
+      }
+      origConfigureConnectionByRole(showNotification);
+      if (currentRole !== 'viewer') {
+        attachRealtimePinSecurityListeners();
+      }
+    };
+
+    // Đồng bộ mã PIN và phiên bản PIN mới nhất khi tải trang
+    Promise.all([
+      fetchFirebaseRest('viho_tournament_v1/pins').catch(() => null),
+      fetchFirebaseRest('viho_tournament_v1/pinVersions').catch(() => null)
+    ]).then(([pinsData, verData]) => {
+      if (pinsData) systemPins = { ...systemPins, ...pinsData };
+      if (verData) systemPinVersions = { ...systemPinVersions, ...verData };
+      if (currentRole !== 'viewer') {
+        verifySessionAgainstServerPins();
+        if (currentRole !== 'viewer') attachRealtimePinSecurityListeners();
+      }
+    });
+
+    // Nâng cấp nút Xác nhận Đăng nhập (#confirmLoginBtn) để lưu mã PIN & Version xác thực
+    const oldConfirmLoginBtn = document.getElementById('confirmLoginBtn');
+    const newConfirmLoginBtn = oldConfirmLoginBtn.cloneNode(true);
+    oldConfirmLoginBtn.parentNode.replaceChild(newConfirmLoginBtn, oldConfirmLoginBtn);
+
+    newConfirmLoginBtn.addEventListener('click', async () => {
+      const selectedRole = loginRoleSelect.value;
+      if (selectedRole === 'viewer') {
+        currentRole = 'viewer';
+        sessionStorage.setItem('viho_role', 'viewer');
+        sessionStorage.removeItem('viho_auth_pin');
+        sessionStorage.removeItem('viho_auth_version');
+        authModal.classList.add('hidden');
+        configureConnectionByRole(false);
+        attachListenersForAllScoreboards();
+        syncUIFromActiveCategory();
+        showToast('Đã chuyển sang Chế độ Xem (Siêu tải - Không chiếm kết nối Firebase)');
+        return;
+      }
+
+      // Luôn kiểm tra mã PIN mới nhất trên server trước khi cho đăng nhập
+      try {
+        const [latestPins, latestVers] = await Promise.all([
+          fetchFirebaseRest('viho_tournament_v1/pins').catch(() => null),
+          fetchFirebaseRest('viho_tournament_v1/pinVersions').catch(() => null)
+        ]);
+        if (latestPins) systemPins = { ...systemPins, ...latestPins };
+        if (latestVers) systemPinVersions = { ...systemPinVersions, ...latestVers };
+      } catch (e) {}
+
+      const enteredPin = loginPinInput.value.trim();
+      if (enteredPin === String(systemPins[selectedRole])) {
+        currentRole = selectedRole;
+        const currentVer = String(systemPinVersions[selectedRole] || 1);
+        sessionStorage.setItem('viho_role', selectedRole);
+        sessionStorage.setItem('viho_auth_pin', enteredPin);
+        sessionStorage.setItem('viho_auth_version', currentVer);
+
+        configureConnectionByRole(false);
+
+        if (selectedRole.startsWith('Sân ')) {
+          const hasCourtCat = categories.some(c => (c.court || 'Sân 1') === selectedRole);
+          if (!hasCourtCat) {
+            const newId = Math.max(...categories.map(c => c.id), 0) + 1;
+            const newCat = createNewCategory(newId, `Hạng cân 1 (${selectedRole})`, 8, selectedRole, "single");
+            categories.push(newCat);
+            activeCategoryId = newCat.id;
+            saveOneCategoryToFirebase(newCat, true);
+          }
+        }
+
+        authModal.classList.add('hidden');
+        syncUIFromActiveCategory();
+        setTimeout(() => attachListenersForAllScoreboards(), 300);
+        showToast(`Đăng nhập thành công quyền: ${selectedRole.toUpperCase()}!`);
+      } else {
+        showToast('Mã PIN không chính xác!', 'error');
+      }
+    });
+
+    // Nâng cấp bảng Quản lý Mã PIN (#openPinSettingBtn & #savePinsBtn):
+    // Tự động tăng pinVersions để thu hồi quyền của tất cả các máy từng đăng nhập trước đó
+    const oldOpenPinBtn = document.getElementById('openPinSettingBtn');
+    const newOpenPinBtn = oldOpenPinBtn.cloneNode(true);
+    oldOpenPinBtn.parentNode.replaceChild(newOpenPinBtn, oldOpenPinBtn);
+
+    newOpenPinBtn.addEventListener('click', () => {
+      if (currentRole !== 'admin') return;
+      const roles = ['admin', 'Sân 1', 'Sân 2', 'Sân 3', 'Sân 4', 'Sân 5', 'Sân 6'];
+      pinSettingsForm.innerHTML = roles.map(r => `
+        <div class="flex items-center justify-between gap-2 bg-slate-800 px-3.5 py-2 rounded-xl border border-slate-700">
+          <div class="min-w-0">
+            <div class="text-xs font-bold ${r === 'admin' ? 'text-purple-400 uppercase' : 'text-amber-400'}">
+              ${r === 'admin' ? '👑 Mã PIN Admin' : `📝 Mã PIN Thư ký ${r}`}
+            </div>
+            <div class="text-[10px] text-slate-400">Đổi PIN sẽ tự động đăng xuất các máy cũ</div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <input type="text" data-pin-role="${r}" value="${escapeHtml(systemPins[r] || '')}" class="pin-config-input w-24 bg-slate-900 border border-slate-600 rounded-lg px-2.5 py-1 text-center font-black text-sm text-white focus:border-purple-400 focus:outline-none" />
+            ${r !== 'admin' ? `<button type="button" data-revoke-role="${r}" class="force-revoke-role-btn py-1 px-2 rounded-lg bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-[10px] font-bold transition-colors cursor-pointer" title="Thu hồi ngay quyền truy cập của các máy đang đăng nhập ${r}">Thu hồi</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      pinSettingsForm.querySelectorAll('.force-revoke-role-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetRole = btn.getAttribute('data-revoke-role');
+          systemPinVersions[targetRole] = Date.now();
+          pinVersionsRef.set(systemPinVersions);
+          showToast(`🔒 Đã thu hồi phiên đăng nhập của tất cả máy thuộc ${targetRole}!`);
+        });
+      });
+
+      pinSettingModal.classList.remove('hidden');
+    });
+
+    const oldSavePinsBtn = document.getElementById('savePinsBtn');
+    const newSavePinsBtn = oldSavePinsBtn.cloneNode(true);
+    oldSavePinsBtn.parentNode.replaceChild(newSavePinsBtn, oldSavePinsBtn);
+
+    newSavePinsBtn.addEventListener('click', () => {
+      if (currentRole !== 'admin') return;
+      const changedRoles = [];
+      const nowVersion = Date.now();
+
+      pinSettingsForm.querySelectorAll('.pin-config-input').forEach(inp => {
+        const role = inp.getAttribute('data-pin-role');
+        const val = inp.value.trim();
+        if (val) {
+          if (String(systemPins[role]) !== val) {
+            changedRoles.push(role);
+            systemPinVersions[role] = nowVersion;
+          }
+          systemPins[role] = val;
+        }
+      });
+
+      // Cập nhật lại session của chính máy Admin đang thao tác để không tự đá chính mình
+      if (currentRole === 'admin') {
+        sessionStorage.setItem('viho_auth_pin', String(systemPins['admin']));
+        sessionStorage.setItem('viho_auth_version', String(systemPinVersions['admin'] || 1));
+      }
+
+      pinsRef.set(systemPins);
+      pinVersionsRef.set(systemPinVersions);
+      pinSettingModal.classList.add('hidden');
+
+      if (changedRoles.length > 0) {
+        showToast(`Đã lưu mã PIN mới và thu hồi quyền truy cập các máy cũ của: ${changedRoles.join(', ')}!`);
+      } else {
+        showToast('Đã lưu cấu hình mã PIN!');
+      }
+    });
+
+    // =========================================================================
+    // YÊU CẦU 3: HỆ THỐNG TẠO BẢN SAO LƯU & KHÔI PHỤC DỮ LIỆU
+    // =========================================================================
+    const backupModal = document.getElementById('backupModal');
+    const snapshotsListContainer = document.getElementById('snapshotsListContainer');
+    const restoreBackupFileInput = document.getElementById('restoreBackupFileInput');
+
+    function formatBackupTimestamp(ts) {
+      const d = new Date(Number(ts) || Date.now());
+      const pad = n => String(n).padStart(2, '0');
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
+    function formatFileNameTimestamp(ts) {
+      const d = new Date(Number(ts) || Date.now());
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}`;
+    }
+
+    async function buildFullTournamentBackupObject(includeAvatars = true, note = "Sao lưu thủ công") {
+      const now = Date.now();
+      let avatarsData = null;
+      let logoData = localStorage.getItem('viho_cached_logo') || null;
+
+      if (includeAvatars) {
+        try {
+          avatarsData = await fetchFirebaseRest('viho_athlete_avatars_v2').catch(() => null);
+          if (!logoData) {
+            logoData = await fetchFirebaseRest('viho_logo_cache').catch(() => null);
+          }
+        } catch (e) {}
+      }
+
+      return {
+        backupVersion: "2.0",
+        createdAt: now,
+        createdAtFormatted: formatBackupTimestamp(now),
+        createdByRole: currentRole,
+        note: note,
+        tournamentName: categories[0]?.tournamentName || "Giải Taekwondo Nội Bộ - CLB Vĩ Hồ",
+        categoriesCount: categories.length,
+        categories: JSON.parse(JSON.stringify(categories)),
+        scoreboardLinks: { ...courtScoreboardUrls },
+        logo: includeAvatars ? logoData : null,
+        athleteAvatars: includeAvatars ? avatarsData : null
+      };
+    }
+
+    async function downloadBackupAsJsonFile(includeAvatars = true) {
+      showToast('⏳ Đang đóng gói dữ liệu sao lưu toàn giải...');
+      const payload = await buildFullTournamentBackupObject(includeAvatars, "Sao lưu ra file máy tính");
+      const jsonStr = JSON.stringify(payload, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SaoLuu_GiaiDau_ViHo_${formatFileNameTimestamp(payload.createdAt)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('✅ Đã tải file sao lưu (.json) về máy tính thành công!');
+    }
+
+    function getLocalAutoBackups() {
+      try {
+        const raw = localStorage.getItem(LOCAL_AUTO_BACKUPS_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveLocalAutoBackups(list) {
+      try {
+        localStorage.setItem(LOCAL_AUTO_BACKUPS_KEY, JSON.stringify(list.slice(0, 8)));
+      } catch (e) {}
+    }
+
+    function createLocalAutoBackupSnapshot(note = "Sao lưu tự động") {
+      try {
+        const now = Date.now();
+        const snap = {
+          id: `local_${now}`,
+          createdAt: now,
+          createdAtFormatted: formatBackupTimestamp(now),
+          createdByRole: currentRole,
+          note: note,
+          categoriesCount: categories.length,
+          categories: JSON.parse(JSON.stringify(categories)),
+          scoreboardLinks: { ...courtScoreboardUrls }
+        };
+        const list = getLocalAutoBackups();
+        list.unshift(snap);
+        saveLocalAutoBackups(list);
+      } catch (e) {
+        console.warn('Không thể lưu auto-backup cục bộ:', e);
+      }
+    }
+
+    async function createSystemSnapshot(note = "Bản sao lưu nhanh") {
+      const now = Date.now();
+      const snap = {
+        id: `snap_${now}`,
+        createdAt: now,
+        createdAtFormatted: formatBackupTimestamp(now),
+        createdByRole: currentRole,
+        note: note,
+        categoriesCount: categories.length,
+        categories: JSON.parse(JSON.stringify(categories)),
+        scoreboardLinks: { ...courtScoreboardUrls }
+      };
+
+      // Lưu vào trình duyệt
+      const localList = getLocalAutoBackups();
+      localList.unshift(snap);
+      saveLocalAutoBackups(localList);
+
+      // Lưu lên Firebase Cloud (giữ tối đa 8 bản gần nhất)
+      if (currentRole !== 'viewer') {
+        try {
+          await cloudBackupsRef.child(snap.id).set(snap);
+          const allSnap = await cloudBackupsRef.once('value');
+          const allVal = allSnap.val() || {};
+          const keys = Object.keys(allVal).sort((a, b) => (allVal[b]?.createdAt || 0) - (allVal[a]?.createdAt || 0));
+          if (keys.length > 8) {
+            for (const oldKey of keys.slice(8)) {
+              cloudBackupsRef.child(oldKey).remove();
+            }
+          }
+        } catch (e) {
+          console.warn('Lưu snapshot đám mây chưa thành công:', e);
+        }
+      }
+
+      renderSnapshotsListInModal();
+      showToast('✅ Đã tạo điểm sao lưu dữ liệu thành công!');
+    }
+
+    async function applyRestoreFromBackupPayload(backupObj) {
+      if (!backupObj || !backupObj.categories) {
+        showToast('Dữ liệu bản sao lưu không hợp lệ!', 'error');
+        return;
+      }
+
+      const parsedCats = normalizeCategoriesData(backupObj.categories);
+      if (!parsedCats || parsedCats.length === 0) {
+        showToast('Không tìm thấy hạng cân hợp lệ trong bản sao lưu!', 'error');
+        return;
+      }
+
+      const confirmMsg = `Bạn có chắc chắn muốn KHÔI PHỤC dữ liệu từ bản sao lưu lúc [${backupObj.createdAtFormatted || 'trước đó'}] gồm ${parsedCats.length} nội dung thi đấu không?\n\n(Hệ thống sẽ tự động lưu lại trạng thái hiện tại trước khi khôi phục)`;
+      if (!window.confirm(confirmMsg)) return;
+
+      // Sao lưu trạng thái hiện tại trước khi đè dữ liệu khôi phục
+      createLocalAutoBackupSnapshot('Tự động sao lưu trước khi Khôi phục dữ liệu');
+
+      categories = parsedCats;
+      activeCategoryId = categories[0].id;
+      isSummaryView = false;
+
+      if (backupObj.scoreboardLinks) {
+        courtScoreboardUrls = { ...courtScoreboardUrls, ...backupObj.scoreboardLinks };
+        scoreboardLinksRef.set(courtScoreboardUrls);
+      }
+
+      if (backupObj.logo) {
+        try { localStorage.setItem('viho_cached_logo', backupObj.logo); } catch (e) {}
+        applyLogoToUI(backupObj.logo);
+        logoRef.set(backupObj.logo);
+      }
+
+      if (backupObj.athleteAvatars && typeof backupObj.athleteAvatars === 'object') {
+        athleteAvatarsRef.set(backupObj.athleteAvatars).catch(() => {});
+        Object.entries(backupObj.athleteAvatars).forEach(([k, v]) => cacheAvatarSafely(k, v));
+      }
+
+      saveAllCategoriesToFirebase();
+      syncUIFromActiveCategory();
+      backupModal.classList.add('hidden');
+      showToast(`🎉 Đã khôi phục thành công ${categories.length} nội dung thi đấu!`);
+    }
+
+    async function renderSnapshotsListInModal() {
+      if (!snapshotsListContainer) return;
+      snapshotsListContainer.innerHTML = `<div class="text-xs text-slate-400 text-center py-3">Đang đồng bộ danh sách bản sao lưu...</div>`;
+
+      const mergedMap = new Map();
+      getLocalAutoBackups().forEach(item => {
+        if (item && item.id) mergedMap.set(item.id, { ...item, source: 'Trình duyệt' });
+      });
+
+      try {
+        const cloudData = await fetchFirebaseRest('viho_tournament_backups_v1').catch(() => null);
+        if (cloudData && typeof cloudData === 'object') {
+          Object.values(cloudData).forEach(item => {
+            if (item && item.id) mergedMap.set(item.id, { ...item, source: 'Đám mây Firebase' });
+          });
+        }
+      } catch (e) {}
+
+      const list = Array.from(mergedMap.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      if (list.length === 0) {
+        snapshotsListContainer.innerHTML = `<div class="text-xs text-slate-500 text-center py-4">Chưa có điểm sao lưu nào. Hãy bấm "+ Tạo Bản Sao Lưu Ngay" ở trên.</div>`;
+        return;
+      }
+
+      snapshotsListContainer.innerHTML = list.map((snap, idx) => `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-black text-teal-300">${idx + 1}. ${escapeHtml(snap.createdAtFormatted || formatBackupTimestamp(snap.createdAt))}</span>
+              <span class="px-1.5 py-0.5 text-[10px] rounded bg-slate-800 text-amber-300 border border-slate-700 font-bold">${snap.categoriesCount || (snap.categories ? snap.categories.length : 0)} nội dung</span>
+              <span class="px-1.5 py-0.5 text-[10px] rounded bg-teal-950 text-teal-300 border border-teal-800 font-semibold">${escapeHtml(snap.source || 'Hệ thống')}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 truncate mt-0.5">${escapeHtml(snap.note || 'Bản sao lưu')} • Tạo bởi: ${escapeHtml(snap.createdByRole || 'Admin')}</div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" data-restore-snap="${snap.id}" class="restore-snap-btn py-1 px-2.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] cursor-pointer">
+              Khôi phục
+            </button>
+            <button type="button" data-download-snap="${snap.id}" class="download-snap-btn py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-[11px] cursor-pointer">
+              ⬇ File
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      snapshotsListContainer.querySelectorAll('.restore-snap-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const snapId = btn.getAttribute('data-restore-snap');
+          const found = mergedMap.get(snapId);
+          if (found) applyRestoreFromBackupPayload(found);
+        });
+      });
+
+      snapshotsListContainer.querySelectorAll('.download-snap-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const snapId = btn.getAttribute('data-download-snap');
+          const found = mergedMap.get(snapId);
+          if (!found) return;
+          const blob = new Blob([JSON.stringify(found, null, 2)], { type: 'application/json;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `SaoLuu_ViHo_${formatFileNameTimestamp(found.createdAt)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        });
+      });
+    }
+
+    function openBackupManagerModal() {
+      if (currentRole === 'viewer') return;
+      renderSnapshotsListInModal();
+      backupModal.classList.remove('hidden');
+    }
+
+    const openBackupModalBtnEl = document.getElementById('openBackupModalBtn');
+    if (openBackupModalBtnEl) openBackupModalBtnEl.addEventListener('click', openBackupManagerModal);
+
+    const quickBackupBarBtnEl = document.getElementById('quickBackupBarBtn');
+    if (quickBackupBarBtnEl) quickBackupBarBtnEl.addEventListener('click', openBackupManagerModal);
+
+    document.getElementById('closeBackupModalBtn').addEventListener('click', () => backupModal.classList.add('hidden'));
+    backupModal.addEventListener('click', (e) => {
+      if (e.target === backupModal) backupModal.classList.add('hidden');
+    });
+
+    document.getElementById('downloadBackupJsonBtn').addEventListener('click', () => {
+      const includeAvatars = Boolean(document.getElementById('includeAvatarsInBackupCheckbox')?.checked);
+      downloadBackupAsJsonFile(includeAvatars);
+    });
+
+    document.getElementById('createSnapshotBtn').addEventListener('click', () => {
+      createSystemSnapshot(`Sao lưu chủ động (${currentRole})`);
+    });
+
+    document.getElementById('triggerRestoreFileBtn').addEventListener('click', () => {
+      restoreBackupFileInput.click();
+    });
+
+    restoreBackupFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          applyRestoreFromBackupPayload(parsed);
+        } catch (err) {
+          showToast('File sao lưu (.json) không đúng định dạng!', 'error');
+        } finally {
+          restoreBackupFileInput.value = '';
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    // Cập nhật lại trạng thái nút trên giao diện ngay sau khi nạp xong module
+    applyRolePermissionsUI();
   </script>
 </body>
 </html>
