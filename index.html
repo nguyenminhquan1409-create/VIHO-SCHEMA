@@ -2813,8 +2813,10 @@
       zoomStage.style.transform = `scale(${currentZoomScale})`;
       stickyRoundHeadersRow.style.transform = `scale(${currentZoomScale})`;
 
+      const requiredH = updateBracketConnectorLines() || 400;
+
       const naturalW = bracketContent.scrollWidth || 800;
-      const naturalH = bracketContent.scrollHeight || 400;
+      const naturalH = Math.max(bracketContent.scrollHeight || 400, requiredH);
       const scaledW = Math.round(naturalW * currentZoomScale);
       const scaledH = Math.round(naturalH * currentZoomScale);
 
@@ -2823,8 +2825,6 @@
       stickyRoundHeadersWrap.style.width = `${scaledW}px`;
       stickyRoundHeadersWrap.style.height = `${Math.round(46 * currentZoomScale)}px`;
       exportArea.style.minWidth = `${scaledW}px`;
-
-      updateBracketConnectorLines();
     }
 
     document.getElementById('zoomInBtn').addEventListener('click', () => applyZoomScale(currentZoomScale + 0.1));
@@ -3942,20 +3942,105 @@
     document.getElementById('mdResetMatchBtn').addEventListener('click', () => commitMatchScoreAndWinner(null, true));
 
     // ================= RENDER SƠ ĐỒ THI ĐẤU =================
+    function alignFinalAndMedalCards(container, scale) {
+      if (!container) return 400;
+      const roundCols = container.querySelectorAll('.round-col-item');
+      if (!roundCols.length) return container.scrollHeight || 400;
+
+      const finalCol = roundCols[roundCols.length - 1];
+      const champCol = container.querySelector('#champResultsCol');
+      if (!finalCol || !champCol) return container.scrollHeight || 400;
+
+      const colTop = finalCol.getBoundingClientRect().top;
+      const finalMatchWrap = finalCol.querySelector('.final-match-wrapper');
+      const finalCard = finalMatchWrap ? finalMatchWrap.querySelector('.match-card-box') : null;
+      const finalBox = finalMatchWrap ? finalMatchWrap.querySelector('.athletes-pair-box') : null;
+
+      const goldWrap = champCol.querySelector('#goldMedalCardWrapper');
+      const silverWrap = champCol.querySelector('#silverMedalCardWrapper');
+      const bronzeWrap = champCol.querySelector('#bronzeMedalCardWrapper');
+      const thirdMatchWrap = finalCol.querySelector('#thirdPlaceMatchWrapper');
+
+      if (!finalBox || !finalCard || !goldWrap || !silverWrap || !bronzeWrap) {
+        return container.scrollHeight || 400;
+      }
+
+      const rFinalBox = finalBox.getBoundingClientRect();
+      const rFinalCard = finalCard.getBoundingClientRect();
+
+      // Tâm dọc của cặp VĐV trận Chung kết (theo hệ tọa độ gốc chưa nhân scale, tính từ đỉnh cột)
+      const yFinalBoxCenter = ((rFinalBox.top - colTop) + (rFinalBox.height / 2)) / scale;
+      const finalCardBottom = (rFinalCard.bottom - colTop) / scale;
+
+      const goldH = goldWrap.offsetHeight;
+      const silverH = silverWrap.offsetHeight;
+      const bronzeH = bronzeWrap.offsetHeight;
+
+      // 1. Căn giữa ô Hạng Nhất (HCV) trùng khít theo phương ngang với tâm cặp VĐV trận Chung kết
+      const goldTop = Math.max(0, yFinalBoxCenter - (goldH / 2));
+      goldWrap.style.top = `${goldTop.toFixed(2)}px`;
+      const goldBottom = goldTop + goldH;
+
+      const baseGap = 18;
+      const defaultSilverTop = goldBottom + baseGap;
+      const defaultBronzeTop = defaultSilverTop + silverH + baseGap;
+      const defaultBronzeCenterY = defaultBronzeTop + (bronzeH / 2);
+
+      let bronzeTop = defaultBronzeTop;
+      let silverTop = defaultSilverTop;
+      let maxBottomInCol = bronzeTop + bronzeH;
+
+      if (thirdMatchWrap) {
+        const thirdBox = thirdMatchWrap.querySelector('.athletes-pair-box');
+        const rThirdWrap = thirdMatchWrap.getBoundingClientRect();
+        const rThirdBox = thirdBox ? thirdBox.getBoundingClientRect() : rThirdWrap;
+
+        // Khoảng cách từ đỉnh thẻ Trận Tranh Hạng 3 đến tâm dọc của cặp VĐV Tranh Hạng 3
+        const thirdBoxCenterOffset = ((rThirdBox.top - rThirdWrap.top) + (rThirdBox.height / 2)) / scale;
+
+        // Đảm bảo thẻ Trận Tranh Hạng 3 luôn cách đáy thẻ Chung kết tối thiểu 24px
+        const minThirdWrapTop = finalCardBottom + 24;
+        const minBronzeCenterY = minThirdWrapTop + thirdBoxCenterOffset;
+
+        const targetBronzeCenterY = Math.max(defaultBronzeCenterY, minBronzeCenterY);
+        bronzeTop = targetBronzeCenterY - (bronzeH / 2);
+        const thirdWrapTop = targetBronzeCenterY - thirdBoxCenterOffset;
+
+        // 2. Đặt ô Hạng 2 (HCB) nằm chính giữa khoảng trống giữa đáy ô Hạng Nhất và đỉnh ô Hạng 3
+        silverTop = goldBottom + ((bronzeTop - goldBottom - silverH) / 2);
+
+        thirdMatchWrap.style.top = `${thirdWrapTop.toFixed(2)}px`;
+        maxBottomInCol = Math.max(bronzeTop + bronzeH, thirdWrapTop + thirdMatchWrap.offsetHeight);
+      }
+
+      silverWrap.style.top = `${silverTop.toFixed(2)}px`;
+      bronzeWrap.style.top = `${bronzeTop.toFixed(2)}px`;
+
+      const baseTreeHeight = roundCols[0].offsetHeight + 56;
+      const requiredHeight = Math.max(baseTreeHeight, Math.ceil(maxBottomInCol + 56));
+      if (zoomStage) {
+        zoomStage.style.minHeight = `${requiredHeight}px`;
+      }
+      return requiredHeight;
+    }
+
     function updateBracketConnectorLines() {
       const container = document.getElementById('bracketContent');
       const oldSvg = container.querySelector('.bracket-connectors-svg');
       if (oldSvg) oldSvg.remove();
 
-      const cRect = container.getBoundingClientRect();
-      if (cRect.width === 0 || cRect.height === 0) return;
+      const cRectInit = container.getBoundingClientRect();
+      if (cRectInit.width === 0 || cRectInit.height === 0) return 400;
 
       const scale = currentZoomScale || 1;
+      const requiredHeight = alignFinalAndMedalCards(container, scale);
+      const cRect = container.getBoundingClientRect();
 
+      const svgHeight = Math.max(container.scrollHeight, requiredHeight);
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('class', 'bracket-connectors-svg absolute inset-0 pointer-events-none z-0');
       svg.setAttribute('width', container.scrollWidth);
-      svg.setAttribute('height', container.scrollHeight);
+      svg.setAttribute('height', svgHeight);
 
       const roundCols = container.querySelectorAll('.round-col-item');
       roundCols.forEach((col, rIdx) => {
@@ -3995,12 +4080,13 @@
             }
           }
         } else {
+          // Đường nối từ Trận Chung Kết sang ô Hạng Nhất (HCV) - Canh giữa tuyệt đối
           const finalBox = pairBoxes[0];
           const champCard = container.querySelector('.champion-card-box');
           if (finalBox && champCard) {
             const rFinal = finalBox.getBoundingClientRect();
             const rChamp = champCard.getBoundingClientRect();
-            const yMid = ((rFinal.top - cRect.top) + (rFinal.height / 2)) / scale;
+            const yMid = ((rChamp.top - cRect.top) + (rChamp.height / 2)) / scale;
             const xStart = (rFinal.right - cRect.left) / scale;
             const xEnd = (rChamp.left - cRect.left) / scale;
 
@@ -4014,13 +4100,13 @@
             svg.appendChild(line);
           }
 
-          // Đường nối từ Trận Tranh Hạng 3 sang thẻ Huy Chương Đồng (Hạng 3)
+          // Đường nối từ Trận Tranh Hạng 3 sang ô Kết Quả Hạng 3 (HCĐ) - Canh giữa tuyệt đối
           const thirdPlaceBox = pairBoxes[1];
           const thirdPlaceCard = container.querySelector('.third-place-card-box');
           if (thirdPlaceBox && thirdPlaceCard) {
             const rThird = thirdPlaceBox.getBoundingClientRect();
             const rThirdCard = thirdPlaceCard.getBoundingClientRect();
-            const yThirdMid = ((rThird.top - cRect.top) + (rThird.height / 2)) / scale;
+            const yThirdMid = ((rThirdCard.top - cRect.top) + (rThirdCard.height / 2)) / scale;
             const xThirdStart = (rThird.right - cRect.left) / scale;
             const xThirdEnd = (rThirdCard.left - cRect.left) / scale;
 
@@ -4037,6 +4123,7 @@
       });
 
       container.prepend(svg);
+      return requiredHeight;
     }
 
     function renderBracket() {
@@ -4054,12 +4141,9 @@
 
       autoResizeTournamentNameInput();
 
-      const { rounds, champion, bronzes, thirdPlaceMatch } = calculateCategoryBracket(current);
+      const { rounds, champion, silver, bronzes, thirdPlaceMatch } = calculateCategoryBracket(current);
       bracketContent.innerHTML = '';
       stickyRoundHeadersRow.innerHTML = '';
-
-      // Đảm bảo chiều cao tối thiểu khi ở Schema 4 để hiển thị trọn vẹn khung Tranh Hạng 3 / Đồng Hạng 3 bên dưới Chung kết
-      bracketContent.style.minHeight = current.size <= 4 ? '540px' : '';
 
       rounds.forEach((round, rIndex) => {
         const isLastCol = rIndex === rounds.length - 1;
@@ -4072,6 +4156,9 @@
 
         const roundCol = document.createElement('div');
         roundCol.className = 'round-col-item flex flex-col justify-around w-72 xl:w-80 relative shrink-0 z-10';
+        if (rIndex === 0 && current.size <= 4) {
+          roundCol.style.minHeight = '380px';
+        }
 
         round.forEach((match, mIndex) => {
           const isThirdPlace = Boolean(match.isThirdPlace);
@@ -4102,10 +4189,11 @@
 
           const matchWrapper = document.createElement('div');
           if (isThirdPlace) {
+            matchWrapper.id = 'thirdPlaceMatchWrapper';
             matchWrapper.className = 'w-full z-20';
-            matchWrapper.style.cssText = 'position: absolute; top: calc(50% + 92px); left: 0; right: 0;';
+            matchWrapper.style.cssText = 'position: absolute; top: 0; left: 0; right: 0;';
           } else {
-            matchWrapper.className = 'relative flex-1 flex flex-col justify-center py-2.5';
+            matchWrapper.className = `relative flex-1 flex flex-col justify-center py-2.5 ${isFinal ? 'final-match-wrapper' : ''}`;
           }
 
           const cardBorderClass = isThirdPlace
@@ -4191,13 +4279,28 @@
 
       const champStickyHeader = document.createElement('div');
       champStickyHeader.className = 'round-badge w-64 xl:w-72 h-8 shrink-0 flex items-center justify-center text-center text-xs font-black text-yellow-800 uppercase tracking-widest bg-yellow-300 border border-yellow-400 rounded-lg shadow-xs';
-      champStickyHeader.innerHTML = `<span>${current.hasThirdPlaceMatch ? '🏆 Vô Địch & Hạng 3' : '🏆 Vô Địch & Đồng Hạng 3'}</span>`;
+      champStickyHeader.innerHTML = `<span>🏆 Kết Quả Hạng 1 - 2 - 3</span>`;
       stickyRoundHeadersRow.appendChild(champStickyHeader);
 
       const champCol = document.createElement('div');
-      champCol.className = 'flex flex-col justify-around w-64 xl:w-72 relative shrink-0 z-10';
+      champCol.id = 'champResultsCol';
+      champCol.className = 'w-64 xl:w-72 relative shrink-0 z-10';
+
       const champName = champion && !champion.isEmpty ? (champion.name || `VĐV Số ${champion.seed}`) : "???";
       const champUnit = champion && !champion.isEmpty && champion.unit ? champion.unit : "Chờ kết quả Chung Kết";
+
+      const silverName = silver && !silver.isEmpty ? (silver.name || `VĐV Số ${silver.seed}`) : "???";
+      const silverUnit = silver && !silver.isEmpty && silver.unit ? silver.unit : "Chờ kết quả Chung Kết";
+
+      const secondPlaceCardHtml = `
+        <div id="silverMedalCardWrapper" class="w-full z-20" style="position: absolute; top: 0; left: 0; right: 0;">
+          <div class="second-place-card-box bg-gradient-to-br from-slate-50 via-gray-100 to-slate-200 rounded-2xl shadow-md border-2 border-slate-400 p-4 text-center z-10 relative">
+            <h3 class="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-1">🥈 Hạng 2 (Huy Chương Bạc)</h3>
+            <div class="text-base xl:text-lg font-black text-slate-800 break-words leading-snug mt-1">${escapeHtml(silverName)}</div>
+            <div class="text-xs font-bold text-slate-600 mt-1.5 border-t border-slate-300/80 pt-1.5 break-words">${escapeHtml(silverUnit)}</div>
+          </div>
+        </div>
+      `;
 
       let thirdPlaceCardHtml = '';
       if (current.hasThirdPlaceMatch) {
@@ -4209,7 +4312,7 @@
               ? "Không có VĐV thua Bán kết"
               : "Chờ kết quả Tranh Hạng 3");
         thirdPlaceCardHtml = `
-          <div class="w-full z-20" style="position: absolute; top: calc(50% + 92px); left: 0; right: 0;">
+          <div id="bronzeMedalCardWrapper" class="w-full z-20" style="position: absolute; top: 0; left: 0; right: 0;">
             <div class="third-place-card-box bg-gradient-to-br from-orange-50 via-amber-50/80 to-orange-100 rounded-2xl shadow-md border-2 border-orange-400 p-4 text-center z-10 relative">
               <h3 class="text-[10px] font-black text-orange-800 uppercase tracking-widest mb-1">🥉 Hạng 3 (Thắng Tranh Hạng 3)</h3>
               <div class="text-base xl:text-lg font-black text-slate-800 break-words leading-snug mt-1">${escapeHtml(bName)}</div>
@@ -4228,7 +4331,7 @@
           : `<div class="text-xs font-bold text-orange-800/80 py-2">Chờ kết quả 2 trận Bán Kết</div>`;
 
         thirdPlaceCardHtml = `
-          <div class="w-full z-20" style="position: absolute; top: calc(50% + 92px); left: 0; right: 0;">
+          <div id="bronzeMedalCardWrapper" class="w-full z-20" style="position: absolute; top: 0; left: 0; right: 0;">
             <div class="co-third-card-box bg-gradient-to-br from-orange-50/90 via-amber-50/60 to-orange-100/80 rounded-2xl shadow-sm border-2 border-dashed border-orange-300 p-3.5 text-center z-10 relative">
               <h3 class="text-[10px] font-black text-orange-800 uppercase tracking-widest mb-1.5">🥉 Đồng Hạng 3 (2 HCĐ)</h3>
               ${bronzeItemsHtml}
@@ -4238,13 +4341,14 @@
       }
 
       champCol.innerHTML = `
-        <div class="relative flex-1 flex flex-col justify-center py-2">
-          <div class="champion-card-box bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-100 rounded-2xl shadow-lg border-2 border-yellow-400 p-5 text-center z-10 relative">
-            <h3 class="text-[10px] font-black text-yellow-700 uppercase tracking-widest mb-1">🥇 Huy Chương Vàng</h3>
-            <div class="text-lg xl:text-xl font-black text-slate-800 break-words leading-snug mt-1">${escapeHtml(champName)}</div>
-            <div class="text-xs font-bold text-amber-800 mt-2 border-t border-yellow-300/60 pt-2 break-words">${escapeHtml(champUnit)}</div>
+        <div id="goldMedalCardWrapper" class="w-full z-20" style="position: absolute; top: 0; left: 0; right: 0;">
+          <div class="champion-card-box bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-100 rounded-2xl shadow-lg border-2 border-yellow-400 p-4 text-center z-10 relative">
+            <h3 class="text-[10px] font-black text-yellow-700 uppercase tracking-widest mb-1">🥇 Hạng Nhất (Huy Chương Vàng)</h3>
+            <div class="text-base xl:text-lg font-black text-slate-800 break-words leading-snug mt-1">${escapeHtml(champName)}</div>
+            <div class="text-xs font-bold text-amber-800 mt-1.5 border-t border-yellow-300/60 pt-1.5 break-words">${escapeHtml(champUnit)}</div>
           </div>
         </div>
+        ${secondPlaceCardHtml}
         ${thirdPlaceCardHtml}
       `;
       bracketContent.appendChild(champCol);
